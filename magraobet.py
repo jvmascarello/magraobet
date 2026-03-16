@@ -6,11 +6,18 @@ import datetime
 from itertools import product
 
 # =========================================================
-# CONFIGURAÇÃO PRIVADA
-API_KEY = '382e534fa4dfaa17600726e74b847a4e'
+# CONFIGURAÇÃO DE SEGURANÇA (SECRETS)
+# =========================================================
+# Tenta buscar a chave nos Secrets (Online) ou na barra lateral (Local)
+if "API_KEY" in st.secrets:
+    API_KEY = st.secrets["API_KEY"]
+else:
+    API_KEY = st.sidebar.text_input("Insira sua API Key para uso local:", type="password")
 # =========================================================
 
-st.set_page_config(page_title="MagraoBet v13.0", layout="wide")
+st.set_page_config(page_title="MagraoBet v13.1", layout="wide")
+
+# O restante do seu código v13.0 continua igual daqui para baixo...
 
 def buscar_liga_ativa(api_key):
     url = f"https://api.the-odds-api.com/v4/sports/?apiKey={api_key}"
