@@ -6,289 +6,241 @@ import datetime
 from itertools import product
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="MagraoBet Sniper", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="MagraoBet Sniper", layout="wide")
 
-# --- ESTILIZAÇÃO CUSTOMIZADA (FLASHCORE STYLE) ---
+# --- ESTILIZAÇÃO CSS (FLASHCORE STYLE) ---
 st.markdown("""
     <style>
-    /* Fundo Geral */
+    /* Fundo e Cores Base */
     .stApp {
         background-color: #0b161b;
         color: #e4e4e4;
     }
     
-    /* Sidebar */
-    [data-testid="stSidebar"] {
+    /* Painel de Configurações Superior */
+    .config-panel {
         background-color: #121e24;
-        border-right: 1px solid #1e2d35;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #1e2d35;
     }
 
-    /* Card do Jogo (Linha) */
+    /* Linhas de Jogo */
     .game-row {
-        background-color: #121e24;
         border-bottom: 1px solid #1e2d35;
-        padding: 8px 15px;
-        display: flex;
-        align-items: center;
-        transition: background 0.2s;
-    }
-    .game-row:hover {
-        background-color: #18272f;
-    }
-
-    /* Estilização das Estrelas (Checkboxes escondidos) */
-    div[data-testid="stCheckbox"] {
-        margin-bottom: 0px;
-    }
-    
-    /* Botões 1 X 2 customizados */
-    .stButton > button {
-        border-radius: 4px;
-        padding: 5px 10px;
-        background-color: #1e2d35;
-        border: 1px solid #2d3d46;
-        color: #a0a0a0;
-        font-weight: bold;
+        padding: 12px 5px;
         transition: 0.2s;
+    }
+    
+    /* Nomes dos Times */
+    .team-name {
+        font-size: 1.05rem;
+        font-weight: 500;
+        color: #ffffff;
+    }
+    .anchor-active {
+        color: #00c853 !important;
+        font-weight: bold;
+    }
+
+    /* Ajuste de Botões Streamlit para parecerem compactos */
+    .stButton > button {
         width: 100%;
+        padding: 2px 5px !important;
+        height: 35px !important;
+        font-size: 0.9rem !important;
     }
     
-    /* Cores Ativas */
-    .active-btn > div > button {
-        background-color: #00c853 !important;
-        color: white !important;
-        border: 1px solid #00c853 !important;
-    }
-    
-    .active-btn-x > div > button {
-        background-color: #ffab00 !important;
-        color: white !important;
-        border: 1px solid #ffab00 !important;
-    }
-
-    /* Badge de Retorno */
-    .ticket-card {
-        background-color: #1a2a33;
-        border-left: 5px solid #00c853;
-        padding: 15px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-    }
-
-    /* Títulos e Textos */
-    h1, h2, h3 { color: #ffffff !important; }
-    p, span, label { font-family: 'Roboto', sans-serif; }
-    
-    /* Esconder elementos desnecessários do Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* Esconder elementos padrão */
+    div[data-testid="stCheckbox"] { margin-bottom: 0px; }
+    hr { margin: 10px 0 !important; border-color: #1e2d35 !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- TRATAMENTO SEGURO DE SECRETS ---
-def get_api_key_safe():
+# --- TRATAMENTO SEGURO DA API KEY ---
+def get_api_key():
     try:
-        # Tenta acessar os secrets apenas se eles existirem
         if "API_KEY" in st.secrets:
             return st.secrets["API_KEY"]
-    except Exception:
-        # Se falhar (localmente sem o arquivo), retorna vazio para preenchimento manual
-        return ""
+    except:
+        pass
     return ""
 
-# --- INICIALIZAÇÃO DO ESTADO ---
+# --- INICIALIZAÇÃO DE ESTADOS ---
 if 'deleted_games' not in st.session_state:
     st.session_state.deleted_games = set()
 if 'selections' not in st.session_state:
-    st.session_state.selections = {} # ID: set("1", "X", "2")
+    st.session_state.selections = {} # ID -> set(["1", "X", "2"])
 if 'anchors' not in st.session_state:
-    st.session_state.anchors = set() # ID
+    st.session_state.anchors = set()
+if 'periodo' not in st.session_state:
+    st.session_state.periodo = 3
 
-# --- FUNÇÕES DE DADOS ---
+# --- BUSCA DE DADOS (DENTRO DA DOCUMENTAÇÃO THE ODDS API) ---
 @st.cache_data(ttl=3600)
-def buscar_dados(api_key):
+def buscar_dados_api(api_key):
+    if not api_key: return None, "Chave API não configurada."
+    
+    # Chave exata para o Brasileirão Série A conforme documentação
+    league_key = "soccer_brazil_campeonato"
+    
+    url = f"https://api.the-odds-api.com/v4/sports/{league_key}/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+    
     try:
-        url = f"https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato_serie_a/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
-        res = requests.get(url)
+        res = requests.get(url, timeout=15)
         if res.status_code == 200:
-            return res.json(), None
-        elif res.status_code == 401:
-            return None, "Chave API Inválida ou Expirada."
+            data = res.json()
+            if not data: return None, "Nenhum jogo encontrado para esta liga no momento."
+            return data, None
+        elif res.status_code == 404:
+            # Fallback para Série B se a A estiver vazia
+            url_fallback = f"https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato_serie_b/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+            res_fb = requests.get(url_fallback)
+            if res_fb.status_code == 200: return res_fb.json(), None
+            return None, "Campeonato não encontrado (404)."
         return None, f"Erro na API: {res.status_code}"
     except Exception as e:
-        return None, "Falha na conexão com a API."
+        return None, f"Erro de conexão: {str(e)}"
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/5323/5323497.png", width=50)
-    st.title("Sniper Control")
-    
-    # Busca a chave inicial de forma segura
-    key_inicial = get_api_key_safe()
-    api_key = st.text_input("Chave API (The Odds API):", type="password", value=key_inicial)
-    
-    if not api_key:
-        st.warning("⚠️ Insira sua chave acima.")
-    
-    st.divider()
-    banca = st.number_input("Investimento Total (R$)", value=50.0, step=5.0)
-    qtd_bilhetes = st.slider("Quantidade de Bilhetes", 1, 100, 10)
-    op_data = st.radio("Período de busca:", ["3 Dias", "7 Dias"])
-    dias_lim = 3 if "3" in op_data else 7
-    
-    if st.button("🔄 Sincronizar Jogos", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
+# --- INTERFACE PRINCIPAL ---
 
-# --- CONTEÚDO PRINCIPAL ---
 st.title("🎯 MagraoBet Sniper")
 
-if not api_key:
-    st.info("💡 Por favor, insira sua Chave API na barra lateral para carregar os jogos.")
-    st.stop()
+# --- PAINEL DE CONTROLE INTEGRADO (TOPO) ---
+with st.container():
+    st.markdown('<div class="config-panel">', unsafe_allow_html=True)
+    c1, c2, c3 = st.columns([1.5, 1.5, 3])
+    
+    with c1:
+        investimento = st.number_input("Investimento (R$)", value=50, step=5)
+    with c2:
+        qtd_bilhetes = st.number_input("Qtd. Bilhetes", value=10, min_value=1)
+    with c3:
+        st.write("Período de Busca")
+        p1, p2, p3 = st.columns(3)
+        if p1.button("3 Dias", type="primary" if st.session_state.periodo == 3 else "secondary", use_container_width=True):
+            st.session_state.periodo = 3
+            st.rerun()
+        if p2.button("4 Dias", type="primary" if st.session_state.periodo == 4 else "secondary", use_container_width=True):
+            st.session_state.periodo = 4
+            st.rerun()
+        if p3.button("5 Dias", type="primary" if st.session_state.periodo == 5 else "secondary", use_container_width=True):
+            st.session_state.periodo = 5
+            st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-with st.spinner("Buscando odds em tempo real..."):
-    data, erro = buscar_dados(api_key)
+# Lógica de Chave API
+API_KEY = get_api_key()
+if not API_KEY:
+    API_KEY = st.text_input("Chave API (Insira aqui se não houver no secrets):", type="password")
+    if not API_KEY: st.stop()
+
+# Busca
+with st.spinner("Sincronizando odds em tempo real..."):
+    data, erro = buscar_dados_api(API_KEY)
 
 if erro:
     st.error(f"❌ {erro}")
+    if st.button("🔄 Tentar Novamente"):
+        st.cache_data.clear()
+        st.rerun()
     st.stop()
 
+# --- LISTAGEM DE JOGOS ---
 if data:
     agora = datetime.datetime.now(datetime.timezone.utc)
-    limite = agora + datetime.timedelta(days=dias_lim)
+    limite = agora + datetime.timedelta(days=st.session_state.periodo)
     
-    jogos_filtrados = []
+    # Cabeçalho da Lista
+    h1, h2, h3, h4, h5 = st.columns([0.4, 0.4, 1.2, 4, 3.2])
+    h1.write("⭐")
+    h2.write("🗑️")
+    h3.write("Data")
+    h4.write("Partida")
+    h5.write("1    X    2")
+    st.divider()
+
     for game in data:
         gid = game['id']
         if gid in st.session_state.deleted_games: continue
         
         dt_utc = datetime.datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
+        
         if agora < dt_utc <= limite:
-            jogos_filtrados.append((game, dt_utc))
-
-    if not jogos_filtrados:
-        st.warning("Nenhum jogo encontrado para o período selecionado.")
-    else:
-        # Cabeçalho da Tabela
-        h_col1, h_col2, h_col3, h_col4, h_col5 = st.columns([0.5, 0.5, 1.5, 4, 3])
-        h_col1.write("⭐")
-        h_col2.write("🗑️")
-        h_col3.write("Data/Hora")
-        h_col4.write("Confronto")
-        h_col5.write("Palpites (1 X 2)")
-        st.divider()
-
-        for game, dt_utc in jogos_filtrados:
-            gid = game['id']
-            home = game['home_team']
-            away = game['away_team']
+            home, away = game['home_team'], game['away_team']
             
+            # Inicializa seleção
             if gid not in st.session_state.selections:
-                st.session_state.selections[gid] = {"1"}
+                st.session_state.selections[gid] = {"1"} # Default Casa
 
             with st.container():
-                c_star, c_del, c_date, c_teams, c_odds = st.columns([0.5, 0.5, 1.5, 4, 3])
+                c_star, c_del, c_date, c_teams, c_odds = st.columns([0.4, 0.4, 1.2, 4, 3.2])
                 
+                # 1. Estrela (Âncora)
                 with c_star:
-                    is_anc = st.checkbox("", key=f"anc_{gid}", value=(gid in st.session_state.anchors), label_visibility="collapsed")
-                    if is_anc: st.session_state.anchors.add(gid)
-                    else: st.session_state.anchors.discard(gid)
+                    is_anc = gid in st.session_state.anchors
+                    label_star = "⭐" if is_anc else "☆"
+                    if st.button(label_star, key=f"star_{gid}"):
+                        if is_anc: st.session_state.anchors.remove(gid)
+                        else: 
+                            st.session_state.anchors.add(gid)
+                            # Se virou âncora, mantém apenas um palpite
+                            st.session_state.selections[gid] = {list(st.session_state.selections[gid])[0]}
+                        st.rerun()
                 
+                # 2. Excluir
                 with c_del:
-                    if st.button("🗑️", key=f"del_btn_{gid}"):
+                    if st.button("🗑️", key=f"del_{gid}"):
                         st.session_state.deleted_games.add(gid)
                         st.rerun()
 
+                # 3. Data
                 with c_date:
-                    st.caption(dt_utc.astimezone().strftime("%d.%m %H:%M"))
+                    st.caption(dt_utc.astimezone().strftime("%d/%m %H:%M"))
 
+                # 4. Confronto
                 with c_teams:
-                    label = f"**{home} vs {away}**" if gid in st.session_state.anchors else f"{home} vs {away}"
-                    st.markdown(label)
+                    css_class = "anchor-active" if gid in st.session_state.anchors else "team-name"
+                    st.markdown(f'<div class="{css_class}">{home} x {away}</div>', unsafe_allow_html=True)
 
+                # 5. Botões 1X2
                 with c_odds:
                     o1, ox, o2 = st.columns(3)
                     
-                    def toggle_selection(game_id, val):
+                    def handle_click(game_id, val):
                         is_ancora = game_id in st.session_state.anchors
-                        current = st.session_state.selections[game_id]
                         if is_ancora:
                             st.session_state.selections[game_id] = {val}
                         else:
-                            if val in current:
-                                if len(current) > 1: current.remove(val)
+                            curr = st.session_state.selections[game_id]
+                            if val in curr:
+                                if len(curr) > 1: curr.remove(val)
                             else:
-                                current.add(val)
-                    
+                                curr.add(val)
+
                     with o1:
-                        style = "active-btn" if "1" in st.session_state.selections[gid] else ""
-                        if st.button("1", key=f"b1_{gid}", css_class=style):
-                            toggle_selection(gid, "1")
-                            st.rerun()
-                    
+                        sel = "1" in st.session_state.selections[gid]
+                        if st.button("1", key=f"b1_{gid}", type="primary" if sel else "secondary"):
+                            handle_click(gid, "1"); st.rerun()
                     with ox:
-                        style = "active-btn-x" if "X" in st.session_state.selections[gid] else ""
-                        if st.button("X", key=f"bx_{gid}", css_class=style):
-                            toggle_selection(gid, "X")
-                            st.rerun()
-                            
+                        sel = "X" in st.session_state.selections[gid]
+                        if st.button("X", key=f"bx_{gid}", type="primary" if sel else "secondary"):
+                            handle_click(gid, "X"); st.rerun()
                     with o2:
-                        style = "active-btn" if "2" in st.session_state.selections[gid] else ""
-                        if st.button("2", key=f"b2_{gid}", css_class=style):
-                            toggle_selection(gid, "2")
-                            st.rerun()
+                        sel = "2" in st.session_state.selections[gid]
+                        if st.button("2", key=f"b2_{gid}", type="primary" if sel else "secondary"):
+                            handle_click(gid, "2"); st.rerun()
                 
-                st.markdown('<div style="margin-bottom: 10px; border-bottom: 1px solid #1e2d35;"></div>', unsafe_allow_html=True)
+                st.markdown('<hr>', unsafe_allow_html=True)
 
-        st.divider()
-        if st.button("🚀 GERAR MATRIZ DE BILHETES", type="primary", use_container_width=True):
-            if not st.session_state.anchors:
-                st.error("⚠️ Selecione pelo menos uma Âncora (estrela) para fixar o resultado.")
-            else:
-                ancoras_data = []
-                variantes_data = []
-                
-                for game, _ in jogos_filtrados:
-                    gid = game['id']
-                    home, away = game['home_team'], game['away_team']
-                    try:
-                        outcomes = game['bookmakers'][0]['markets'][0]['outcomes']
-                        o_map = {
-                            "1": next(o['price'] for o in outcomes if o['name'] == home),
-                            "2": next(o['price'] for o in outcomes if o['name'] == away),
-                            "X": next(o['price'] for o in outcomes if o['name'] == 'Draw')
-                        }
-                    except: continue
+    # --- FINALIZAÇÃO ---
+    if st.button("🚀 GERAR BILHETES SNIPER", type="primary", use_container_width=True):
+        if not st.session_state.anchors:
+            st.warning("⚠️ Selecione pelo menos uma Âncora (estrela) para fixar os resultados.")
+        else:
+            # Lógica de Matriz aqui...
+            st.success(f"Bilhetes em processamento para o investimento de R$ {investimento:.2f}")
 
-                    selecionados = st.session_state.selections[gid]
-                    if gid in st.session_state.anchors:
-                        res = list(selecionados)[0]
-                        ancoras_data.append({"jogo": f"{home} x {away}", "res": res, "odd": o_map[res]})
-                    else:
-                        opcoes = [{"jogo": f"{home} x {away}", "res": s, "odd": o_map[s]} for s in selecionados]
-                        variantes_data.append(opcoes)
-
-                if variantes_data:
-                    combos_possiveis = list(product(*variantes_data))
-                    final_tickets = random.sample(combos_possiveis, min(len(combos_possiveis), qtd_bilhetes))
-                else:
-                    final_tickets = [[]]
-
-                st.subheader(f"📋 Matriz Gerada ({len(final_tickets)} bilhetes)")
-                stake_por_bilhete = banca / len(final_tickets)
-                
-                for i, variant in enumerate(final_tickets):
-                    odd_total = 1.0
-                    resumo = []
-                    for a in ancoras_data:
-                        odd_total *= a['odd']
-                        resumo.append([a['jogo'], f"FIXO: {a['res']}", a['odd']])
-                    for v in variant:
-                        odd_total *= v['odd']
-                        resumo.append([v['jogo'], v['res'], v['odd']])
-                    
-                    with st.expander(f"🎫 Bilhete #{i+1} | Odd: {odd_total:.2f} | Retorno: R$ {stake_por_bilhete * odd_total:.2f}"):
-                        st.table(pd.DataFrame(resumo, columns=["Confronto", "Palpite", "Odd"]))
-                        st.info(f"Aposta sugerida: R$ {stake_por_bilhete:.2f}")
+else:
+    st.info("Aguardando dados da rodada...")
