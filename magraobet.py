@@ -6,18 +6,39 @@ import datetime
 from itertools import product
 
 # --- TRATAMENTO HÍBRIDO DE API KEY ---
-# Tenta buscar no Streamlit Cloud; se falhar, abre campo na barra lateral
 api_key_disponivel = False
 try:
     if "API_KEY" in st.secrets:
         API_KEY = st.secrets["API_KEY"]
         api_key_disponivel = True
+    else:
+        api_key_disponivel = False
 except:
     api_key_disponivel = False
 
 st.set_page_config(page_title="MagraoBet Sniper", layout="centered")
 
-# --- ESTILO MOBILE (Botões Grandes) ---
+# --- CACHE DE DADOS (O Segredo para economizar a API) ---
+# O 'ttl=3600' significa que o sistema só vai à internet buscar jogos 1 vez por hora.
+@st.cache_data(ttl=3600)
+def buscar_dados_cached(api_key):
+    if not api_key: return None, "Aguardando chave..."
+    sport_key = "soccer_brazil_campeonato_serie_a"
+    url = f"https://api.the-odds-api.com/v4/sports/{sport_key}/odds/?apiKey={api_key}&regions=eu&markets=h2h&oddsFormat=decimal"
+    try:
+        res = requests.get(url)
+        if res.status_code == 200:
+            return res.json(), None
+        elif res.status_code == 401:
+            return None, "Chave Inválida"
+        elif res.status_code == 429:
+            return None, "Limite de Uso Excedido (API esgotada)"
+        else:
+            return None, f"Erro {res.status_code}"
+    except:
+        return None, "Erro de Conexão"
+
+# --- ESTILO MOBILE ---
 st.markdown("""
     <style>
     div.stButton > button { width: 100%; height: 60px; font-size: 20px !important; border-radius: 12px; }
@@ -25,41 +46,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("⚙️ Ajustes")
     
-    # Se não achou a chave nos segredos, pede para digitar
+    # Campo de chave manual se não houver nos Secrets
     if not api_key_disponivel:
-        API_KEY = st.text_input("Chave de API requerida:", type="password")
+        API_KEY = st.text_input("Insira a API Key:", type="password")
         if API_KEY: api_key_disponivel = True
-    
-    # Investimento: Apenas inteiros, passo de 1
+
     banca = st.number_input("Investimento (R$)", value=50, step=1, format="%d")
     qtd_bilhetes = st.slider("Qtd. Bilhetes", 1, 30, 10)
     
-    filtro_tempo = st.radio("Período da Rodada:", ["Próximos 3 dias", "Próximos 7 dias"])
+    filtro_tempo = st.radio("Período:", ["Próximos 3 dias", "Próximos 7 dias"])
     dias_limit = 3 if "3" in filtro_tempo else 7
-
-def buscar_dados():
-    if not API_KEY: return None, "Aguardando chave..."
-    url = f"https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato_serie_a/odds/?apiKey={API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal"
-    try:
-        res = requests.get(url)
-        return (res.json(), None) if res.status_code == 200 else (None, "Chave Inválida ou Limite Excedido")
-    except: return None, "Erro de Conexão"
+    
+    # Botão para forçar atualização se necessário
+    if st.button("🔄 Forçar Atualização de Jogos"):
+        st.cache_data.clear()
+        st.rerun()
 
 st.title("🎯 MagraoBet Sniper")
 
 if not api_key_disponivel:
-    st.warning("⚠️ Insira a API Key na barra lateral para carregar os jogos.")
+    st.warning("⚠️ Insira a API Key na barra lateral.")
     st.stop()
 
-with st.spinner('Sincronizando jogos...'):
-    data, erro = buscar_dados()
+# Chama a função com Cache
+with st.spinner('A carregar jogos (Economizando API)...'):
+    data, erro = buscar_dados_cached(API_KEY)
 
 if erro:
     st.error(f"❌ {erro}")
+    if "Limite" in erro:
+        st.info("A tua cota de 500 buscas da The Odds API terminou. Terás de esperar o próximo mês ou usar outra chave.")
     st.stop()
 
 if data:
@@ -72,6 +91,8 @@ if data:
             dt_utc = datetime.datetime.fromisoformat(game['commence_time'].replace('Z', '+00:00'))
             if agora < dt_utc <= limite:
                 home, away = game['home_team'], game['away_team']
+                # Verifica se existem bookmakers e odds
+                if not game['bookmakers']: continue
                 odds = game['bookmakers'][0]['markets'][0]['outcomes']
                 o1 = next(o['price'] for o in odds if o['name'] == home)
                 o2 = next(o['price'] for o in odds if o['name'] == away)
@@ -85,18 +106,18 @@ if data:
         except: continue
 
     if jogos_validos:
-        st.header("📌 1. Defina suas Âncoras")
+        st.header("📌 1. Definir Âncoras")
         ancoras_finais = []
         nomes_ancoras = []
         
         for j in jogos_validos:
             if st.checkbox(f"📍 {j['label']}", key=f"anc_{j['id']}"):
-                res = st.radio(f"Resultado fixo para {j['jogo']}:", ["1", "X", "2"], horizontal=True, key=f"res_{j['id']}")
+                res = st.radio(f"Vencerá:", ["1", "X", "2"], horizontal=True, key=f"res_{j['id']}")
                 ancoras_finais.append({"jogo": j['jogo'], "res": res, "odd": j[res]})
                 nomes_ancoras.append(j['label'])
 
         st.divider()
-        st.header("🎲 2. Limpeza e Variáveis")
+        st.header("🎲 2. Variáveis")
         jogos_v = [j for j in jogos_validos if j["label"] not in nomes_ancoras]
         vars_config = []
         
@@ -108,9 +129,9 @@ if data:
                     if palpites:
                         vars_config.append({"jogo": jv['jogo'], "opcoes": palpites, "odds": jv})
 
-        if st.button("🔥 GERAR MATRIZ SNIPER", type="primary"):
+        if st.button("🔥 GERAR BILHETES SNIPER", type="primary"):
             if not ancoras_finais:
-                st.error("Selecione ao menos 1 fixo.")
+                st.error("Seleciona pelo menos 1 âncora.")
             else:
                 op_jogo = [[{"j": v['jogo'], "r": o, "d": v['odds'][o]} for o in v['opcoes']] for v in vars_config]
                 todas_combos = list(product(*op_jogo))
@@ -121,8 +142,9 @@ if data:
                     odd_total = 1.0
                     for a in ancoras_finais: odd_total *= a['odd']
                     for v in combo: odd_total *= v['d']
-                    with st.expander(f"🎫 Bilhete #{i+1} | Retorno: R$ {stake * odd_total:.2f}"):
+                    with st.expander(f"🎫 Bilhete #{i+1} | Odd: {odd_total:.2f}"):
+                        st.write(f"💰 **Retorno: R$ {stake * odd_total:.2f}**")
                         resumo = [[a['jogo'], a['res']] for a in ancoras_finais] + [[v['j'], v['r']] for v in combo]
                         st.table(pd.DataFrame(resumo, columns=["Jogo", "Palpite"]))
     else:
-        st.warning("Nenhum jogo encontrado para este período.")
+        st.warning("Nenhum jogo encontrado no período.")
