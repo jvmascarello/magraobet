@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MagraoBet Sniper - Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -15,12 +15,11 @@
             overflow-x: hidden;
         }
         
-        /* Estilo Flashscore: Layout Horizontal Rígido */
         .game-row {
             display: flex;
             align-items: center;
             border-bottom: 1px solid #1e2d35;
-            padding: 12px 8px;
+            padding: 8px 10px;
             gap: 8px;
             width: 100%;
         }
@@ -32,7 +31,7 @@
             color: #a0a0a0;
             font-weight: 800;
             font-size: 0.8rem;
-            height: 36px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -40,13 +39,11 @@
             flex: 1;
         }
 
-        /* Cores Ativas de Seleção */
-        .btn-bet.active-win { background-color: #00c853 !important; color: white !important; border-color: #00c853 !important; box-shadow: 0 0 10px rgba(0,200,83,0.3); }
-        .btn-bet.active-draw { background-color: #ffab00 !important; color: white !important; border-color: #ffab00 !important; box-shadow: 0 0 10px rgba(255,171,0,0.3); }
+        .btn-bet.active-win { background-color: #00c853 !important; color: white !important; border-color: #00c853 !important; box-shadow: 0 0 10px rgba(0,200,83,0.2); }
+        .btn-bet.active-draw { background-color: #ffab00 !important; color: white !important; border-color: #ffab00 !important; box-shadow: 0 0 10px rgba(255,171,0,0.2); }
 
         .star-icon { cursor: pointer; flex-shrink: 0; transition: transform 0.2s; }
-        .star-icon:active { transform: scale(1.3); }
-        .star-active { color: #ffab00; filter: drop-shadow(0 0 5px rgba(255,171,0,0.4)); }
+        .star-active { color: #ffab00; transform: scale(1.1); }
 
         .truncate-name {
             white-space: nowrap;
@@ -64,32 +61,39 @@
             font-size: 8px;
             font-weight: 900;
             color: white;
-            text-transform: uppercase;
             flex-shrink: 0;
             background: linear-gradient(135deg, #2d3d46 0%, #1e2d35 100%);
             border: 1px solid #3d4d56;
         }
 
-        /* Mobile Portrait Fix */
+        /* Acordeão Estilo Flashscore */
+        summary { list-style: none; cursor: pointer; }
+        summary::-webkit-details-marker { display: none; }
+        
+        details[open] summary { border-bottom: 1px solid #1e2d35; padding-bottom: 8px; margin-bottom: 8px; }
+
         @media (max-width: 640px) {
-            .game-time { font-size: 0.6rem; min-width: 32px; text-align: center; }
-            .team-name { font-size: 0.72rem; line-height: 1.1; max-width: 80px; }
-            .btn-bet { font-size: 0.7rem; height: 32px; }
-            .game-row { gap: 5px; padding: 10px 4px; }
-            .shield-container { display: none; } /* Esconde escudos em telas minúsculas para priorizar nome */
+            .game-time { font-size: 0.65rem; min-width: 35px; text-align: center; }
+            .team-name { font-size: 0.8rem; line-height: 1.2; max-width: 90px; }
+            .btn-bet { font-size: 0.75rem; height: 32px; }
+            .game-row { gap: 6px; padding: 8px 6px; }
         }
 
         .loader {
             border: 3px solid #1e2d35;
             border-radius: 50%;
             border-top: 3px solid #00c853;
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* Botões Esmaecidos */
+        .btn-used { opacity: 0.3 !important; filter: grayscale(0.8); pointer-events: none; }
+        .btn-processing { opacity: 0.5 !important; pointer-events: none; }
     </style>
 </head>
 <body class="p-2 sm:p-4">
@@ -98,89 +102,145 @@
         <!-- HEADER -->
         <header class="text-center mb-4">
             <h1 class="text-xl font-black text-white flex items-center justify-center gap-2 tracking-tighter">
-                🎯 MAGRAOBET SNIPER <span class="text-[10px] bg-green-600 px-2 py-0.5 rounded italic">V2.2 PRO</span>
+                🎯 MAGRAOBET <span class="text-[10px] bg-green-600 px-2 py-0.5 rounded italic uppercase">Sniper Pro V2.6</span>
             </h1>
+            <div id="testModeBadge" class="hidden mt-1">
+                <span class="text-[9px] bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-0.5 rounded-full font-bold uppercase tracking-widest">Modo Teste Local Ativo</span>
+            </div>
         </header>
 
         <!-- PAINEL DE CONFIGURAÇÃO -->
-        <div class="bg-[#121e24] p-4 rounded-xl border border-[#1e2d35] mb-3 shadow-xl">
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                    <label class="text-[9px] uppercase text-gray-500 font-black tracking-widest">Investimento Total</label>
-                    <div class="flex items-center bg-[#1e2d35] rounded mt-1 border border-[#2d3d46]">
-                        <span class="pl-3 text-xs text-gray-500 font-bold">R$</span>
-                        <input type="number" id="investValue" value="50" class="w-full bg-transparent p-2 text-white font-bold outline-none">
-                    </div>
+        <div class="bg-[#121e24] p-4 rounded-xl border border-[#1e2d35] mb-4 shadow-xl">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div class="flex items-center gap-2 bg-[#1e2d35] rounded border border-[#2d3d46] px-3 py-2">
+                    <label class="text-[9px] uppercase text-gray-500 font-black">Investimento R$</label>
+                    <input type="number" id="investValue" value="50" class="w-full bg-transparent text-sm text-white font-bold outline-none">
                 </div>
-                <div>
-                    <label class="text-[9px] uppercase text-gray-500 font-black tracking-widest">Qtd. Bilhetes</label>
-                    <input type="number" id="ticketQty" value="10" class="w-full bg-[#1e2d35] border border-[#2d3d46] rounded p-2 text-white font-bold mt-1 outline-none focus:border-green-500">
+                <div class="flex items-center gap-2 bg-[#1e2d35] rounded border border-[#2d3d46] px-3 py-2">
+                    <label class="text-[9px] uppercase text-gray-500 font-black">Bilhetes</label>
+                    <input type="number" id="ticketQty" value="10" class="w-full bg-transparent text-sm text-white font-bold outline-none">
                 </div>
             </div>
-            <div>
-                <label class="text-[9px] uppercase text-gray-500 font-black tracking-widest block mb-2">Janela de Jogos</label>
-                <div class="flex gap-2">
-                    <button onclick="setPeriod(3)" id="p3" class="period-btn flex-1 bg-green-600 text-white font-bold py-2 rounded text-xs">3 Dias</button>
-                    <button onclick="setPeriod(4)" id="p4" class="period-btn flex-1 bg-[#1e2d35] text-gray-400 font-bold py-2 rounded text-xs">4 Dias</button>
-                    <button onclick="setPeriod(5)" id="p5" class="period-btn flex-1 bg-[#1e2d35] text-gray-400 font-bold py-2 rounded text-xs">5 Dias</button>
+            <div class="flex gap-2">
+                <div class="flex flex-1 gap-1">
+                    <button onclick="setPeriod(3)" id="p3" class="period-btn flex-1 bg-green-600 text-white font-bold py-2 rounded text-xs">3D</button>
+                    <button onclick="setPeriod(4)" id="p4" class="period-btn flex-1 bg-[#1e2d35] text-gray-400 font-bold py-2 rounded text-xs">4D</button>
+                    <button onclick="setPeriod(5)" id="p5" class="period-btn flex-1 bg-[#1e2d35] text-gray-400 font-bold py-2 rounded text-xs">5D</button>
                 </div>
+                <button onclick="resetAllSelections()" class="px-4 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-900/50 rounded text-[10px] font-black uppercase transition-all">
+                    Reiniciar
+                </button>
             </div>
         </div>
 
-        <!-- LEGENDA / INSTRUÇÕES -->
-        <div class="flex items-center justify-between px-2 mb-2 bg-[#0b161b] border-x border-[#1e2d35] py-1">
-            <div class="flex gap-3 text-[8px] uppercase font-bold tracking-wider">
-                <span class="flex items-center gap-1"><span class="text-[#ffab00]">⭐</span> Âncora (Fixo)</span>
-                <span class="flex items-center gap-1"><span class="text-red-500">🗑️</span> Excluir Jogo</span>
+        <!-- LEGENDA -->
+        <div class="flex items-center justify-between px-2 mb-2 py-1 bg-[#0b161b] border-x border-[#1e2d35]">
+            <div class="flex gap-3 text-[8px] uppercase font-bold tracking-wider text-gray-400">
+                <span><span class="text-[#ffab00]">⭐</span> FIXAR ÂNCORA</span>
+                <span><span class="text-red-500 font-bold">🗑️</span> EXCLUIR</span>
             </div>
-            <div class="text-[8px] text-gray-500 font-bold uppercase" id="gameCount">0 Jogos Ativos</div>
+            <div class="text-[8px] text-gray-500 font-bold" id="gameCount">0 JOGOS ATIVOS</div>
+        </div>
+
+        <!-- LOADING -->
+        <div id="loading" class="flex flex-col items-center justify-center py-10">
+            <div class="loader mb-2"></div>
+            <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest">Sincronizando...</span>
+        </div>
+
+        <!-- ERRO -->
+        <div id="errorDisplay" class="hidden bg-red-900/20 border border-red-500/50 p-4 rounded-lg mb-4 text-center">
+            <p class="text-xs text-red-400 font-bold mb-2" id="errorMessage">Erro de rede</p>
+            <div class="flex gap-2 justify-center">
+                <button onclick="fetchOdds()" class="text-[10px] bg-red-500 text-white px-4 py-2 rounded font-bold uppercase">🔄 Tentar Conexão Real</button>
+                <button onclick="useMockData()" class="text-[10px] bg-blue-600 text-white px-4 py-2 rounded font-bold uppercase">🧪 Forçar Teste</button>
+            </div>
         </div>
 
         <!-- LISTA DE JOGOS -->
-        <div id="loading" class="flex flex-col items-center py-10">
-            <div class="loader mb-2"></div>
-            <p class="text-[10px] text-gray-500 uppercase tracking-widest">Sincronizando com as casas...</p>
-        </div>
-
-        <div id="errorDisplay" class="hidden bg-red-900/20 border border-red-500/50 p-4 rounded-lg mb-4 text-center">
-            <p class="text-xs text-red-400 font-bold mb-2" id="errorMessage">Erro de conexão</p>
-            <div class="flex gap-2 justify-center">
-                <button onclick="fetchOdds()" class="text-[10px] bg-red-500 text-white px-3 py-1.5 rounded font-bold uppercase">🔄 Tentar Novamente</button>
-                <button onclick="useMockData()" class="text-[10px] bg-blue-600 text-white px-3 py-1.5 rounded font-bold uppercase">🧪 Simular Dados</button>
-            </div>
-        </div>
-
-        <div id="gameList" class="bg-[#121e24] rounded-t-xl overflow-hidden shadow-2xl border border-[#1e2d35]">
-            <!-- JS Renders -->
-        </div>
+        <div id="gameList" class="bg-[#121e24] rounded-t-xl border border-[#1e2d35] shadow-2xl"></div>
 
         <!-- BOTÃO DE AÇÃO -->
-        <button onclick="generateMatrix()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-b-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest mb-6">
-            🚀 Gerar Matriz Sniper
+        <button onclick="generateMatrix()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-b-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm mb-6">
+            🚀 Gerar Bilhetes Sniper
         </button>
 
-        <!-- SEÇÃO DE JOGOS EXCLUÍDOS (LIXEIRA) -->
-        <div id="excludedSection" class="hidden mb-10">
-            <h3 class="text-[10px] text-gray-600 font-black uppercase mb-2 ml-2 tracking-widest">🗑️ Jogos Removidos (Clique para restaurar)</h3>
-            <div id="excludedList" class="flex flex-wrap gap-2 px-2">
-                <!-- JS Renders -->
-            </div>
+        <!-- LIXEIRA -->
+        <div id="excludedSection" class="hidden mt-6 mb-8">
+            <h3 class="text-[9px] text-gray-600 font-black uppercase mb-2 ml-2 tracking-widest flex items-center gap-2">
+                🗑️ Jogos Removidos (Restaurar)
+            </h3>
+            <div id="excludedList" class="flex flex-wrap gap-2 px-2"></div>
         </div>
 
-        <!-- ÁREA DE RESULTADOS -->
-        <div id="results" class="mt-2 space-y-4 pb-20"></div>
+        <!-- RESULTADOS DA MATRIZ -->
+        <div id="results" class="mt-4 space-y-4"></div>
+
+        <!-- HISTÓRICO DE APOSTAS SALVAS -->
+        <div id="historySection" class="mt-12 pb-24">
+            <details class="group">
+                <summary class="flex items-center justify-center gap-2 text-xs font-black text-gray-500 uppercase tracking-[0.2em] border-b border-[#1e2d35] pb-2 mb-4">
+                    <span>📂 Histórico de Apostas</span>
+                    <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </summary>
+                <div id="historyList" class="space-y-3"></div>
+                <div id="emptyHistory" class="text-center py-8 text-gray-700 italic text-xs">
+                    Nenhuma aposta salva no histórico local.
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-full font-bold text-xs shadow-2xl transition-all opacity-0 pointer-events-none z-50">
+        Salvo no Histórico!
     </div>
 
     <script>
         const API_KEY = "382e534fa4dfaa17600726e74b847a4e";
-        
         let allGames = [];
         let selections = {}; 
         let anchors = new Set();
         let excludedGames = new Set();
         let currentPeriod = 3;
+        let generatedTickets = []; 
 
-        window.onload = () => { fetchOdds(); };
+        window.onload = () => { 
+            checkLocalEnvironment();
+            renderHistory();
+        };
+
+        function checkLocalEnvironment() {
+            const isLocal = window.location.hostname === "localhost" || 
+                            window.location.hostname === "127.0.0.1" || 
+                            window.location.protocol === "file:";
+            
+            if (isLocal) {
+                document.getElementById('testModeBadge').classList.remove('hidden');
+                useMockData();
+            } else {
+                fetchOdds();
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 2000);
+        }
+
+        function resetAllSelections() {
+            selections = {};
+            anchors.clear();
+            excludedGames.clear();
+            generatedTickets = [];
+            document.getElementById('results').innerHTML = '';
+            allGames.forEach(g => selections[g.id] = ["1"]);
+            renderGames();
+        }
 
         function setPeriod(d) {
             currentPeriod = d;
@@ -198,25 +258,18 @@
             const list = document.getElementById('gameList');
             const errorDiv = document.getElementById('errorDisplay');
             const loader = document.getElementById('loading');
-            
             errorDiv.classList.add('hidden');
             loader.classList.remove('hidden');
             list.innerHTML = '';
-
             try {
                 const url = `https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
                 const response = await fetch(url);
-                
-                if (response.status === 401) throw new Error("Chave de API inválida.");
-                if (response.status === 429) throw new Error("Limite de quota da API excedido.");
-                if (!response.ok) throw new Error(`Erro ${response.status}: Falha na API.`);
-                
+                if (!response.ok) throw new Error("Falha na API");
                 allGames = await response.json();
-                if (allGames.length === 0) throw new Error("Nenhum jogo disponível no momento.");
-                
+                allGames.forEach(g => selections[g.id] = ["1"]);
                 renderGames();
             } catch (error) {
-                document.getElementById('errorMessage').innerText = error.message;
+                document.getElementById('errorMessage').innerText = "Erro ao conectar com a API ou Limite de Cotas.";
                 errorDiv.classList.remove('hidden');
             } finally {
                 loader.classList.add('hidden');
@@ -225,71 +278,71 @@
 
         function useMockData() {
             document.getElementById('errorDisplay').classList.add('hidden');
-            allGames = [
-                { id: "m1", home_team: "Flamengo", away_team: "Palmeiras", commence_time: new Date(Date.now() + 86400000).toISOString(), bookmakers: [{ markets: [{ outcomes: [{name: "Flamengo", price: 1.90}, {name: "Palmeiras", price: 3.50}, {name: "Draw", price: 3.30}] }] }] },
-                { id: "m2", home_team: "Botafogo", away_team: "Vasco", commence_time: new Date(Date.now() + 172800000).toISOString(), bookmakers: [{ markets: [{ outcomes: [{name: "Botafogo", price: 2.10}, {name: "Vasco", price: 3.10}, {name: "Draw", price: 3.00}] }] }] },
-                { id: "m3", home_team: "Corinthians", away_team: "São Paulo", commence_time: new Date(Date.now() + 259200000).toISOString(), bookmakers: [{ markets: [{ outcomes: [{name: "Corinthians", price: 2.45}, {name: "São Paulo", price: 2.70}, {name: "Draw", price: 3.10}] }] }] },
-                { id: "m4", home_team: "Grêmio", away_team: "Internacional", commence_time: new Date(Date.now() + 86400000).toISOString(), bookmakers: [{ markets: [{ outcomes: [{name: "Grêmio", price: 2.25}, {name: "Internacional", price: 2.95}, {name: "Draw", price: 3.20}] }] }] }
-            ];
+            document.getElementById('loading').classList.add('hidden');
+            const times = ["Flamengo", "Palmeiras", "Botafogo", "Vasco", "Corinthians", "São Paulo", "Grêmio", "Internacional", "Atlético-MG", "Cruzeiro"];
+            const mock = [];
+            for (let i = 1; i <= 10; i++) {
+                let t1Idx = Math.floor(Math.random() * times.length);
+                let t2Idx;
+                do { t2Idx = Math.floor(Math.random() * times.length); } while (t2Idx === t1Idx);
+                const t1 = times[t1Idx]; const t2 = times[t2Idx];
+                mock.push({
+                    id: `mock_${i}`, home_team: t1, away_team: t2,
+                    commence_time: new Date(Date.now() + (i * 3600000 * 4)).toISOString(),
+                    bookmakers: [{ markets: [{ outcomes: [
+                        { name: t1, price: (1.5 + Math.random() * 1.5).toFixed(2) },
+                        { name: t2, price: (2.0 + Math.random() * 2.5).toFixed(2) },
+                        { name: "Draw", price: (3.0 + Math.random()).toFixed(2) }
+                    ] }] }]
+                });
+            }
+            allGames = mock;
+            allGames.forEach(g => selections[g.id] = ["1"]);
             renderGames();
         }
 
-        // Gera iniciais para simular escudo
-        function getShield(name) {
-            return name.substring(0, 2).toUpperCase();
-        }
+        function getShield(name) { return name.substring(0, 2).toUpperCase(); }
 
         function renderGames() {
             const list = document.getElementById('gameList');
             const exclSection = document.getElementById('excludedSection');
             const exclList = document.getElementById('excludedList');
-            list.innerHTML = '';
-            exclList.innerHTML = '';
-            
+            list.innerHTML = ''; exclList.innerHTML = '';
             const now = new Date();
             const limit = new Date();
             limit.setDate(now.getDate() + currentPeriod);
-
-            const filtered = allGames.filter(g => {
-                const dt = new Date(g.commence_time);
-                return dt > now && dt <= limit;
-            });
-
+            const filtered = allGames.filter(g => new Date(g.commence_time) > now && new Date(g.commence_time) <= limit);
             let activeCount = 0;
 
             filtered.forEach(game => {
                 if (excludedGames.has(game.id)) {
-                    // Adiciona na lixeira visual (mini cards)
-                    const badge = document.createElement('div');
-                    badge.onclick = () => { excludedGames.delete(game.id); renderGames(); };
-                    badge.className = "bg-[#1e2d35] border border-[#2d3d46] px-2 py-1 rounded text-[8px] font-bold text-gray-500 cursor-pointer hover:bg-green-900/30 hover:text-white transition-colors uppercase flex items-center gap-1";
-                    badge.innerHTML = `<span>🔄</span> ${game.home_team} x ${game.away_team}`;
-                    exclList.appendChild(badge);
+                    const b = document.createElement('div');
+                    b.onclick = () => { excludedGames.delete(game.id); renderGames(); };
+                    b.className = "bg-[#1e2d35] border border-[#2d3d46] px-2 py-1 rounded text-[8px] font-bold text-gray-500 cursor-pointer uppercase flex items-center gap-1";
+                    b.innerHTML = `<span>+</span> ${game.home_team} x ${game.away_team}`;
+                    exclList.appendChild(b);
                     return;
                 }
-
                 activeCount++;
-                if (!selections[game.id]) selections[game.id] = ["1"];
                 const dt = new Date(game.commence_time);
                 const isAnchor = anchors.has(game.id);
-                
                 const row = document.createElement('div');
                 row.className = 'game-row';
                 row.innerHTML = `
                     <div onclick="toggleAnchor('${game.id}')" class="star-icon ${isAnchor ? 'star-active' : 'text-gray-700'}">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/></svg>
                     </div>
                     <div class="game-time">
-                        <div class="font-black text-gray-400">${dt.getDate()}/${dt.getMonth()+1}</div>
+                        <div class="font-black text-gray-400 text-[9px]">${dt.getDate()}/${dt.getMonth()+1}</div>
                         <div class="text-[8px] text-gray-600 font-bold">${dt.getHours()}:${dt.getMinutes().toString().padStart(2, '0')}</div>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col gap-1">
+                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                         <div class="flex items-center gap-2">
-                            <div class="shield-container"><div class="team-shield">${getShield(game.home_team)}</div></div>
+                            <div class="team-shield">${getShield(game.home_team)}</div>
                             <div class="team-name truncate-name font-bold ${isAnchor ? 'text-green-500' : 'text-white'}">${game.home_team}</div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="shield-container"><div class="team-shield">${getShield(game.away_team)}</div></div>
+                            <div class="team-shield">${getShield(game.away_team)}</div>
                             <div class="team-name truncate-name font-bold ${isAnchor ? 'text-green-500' : 'text-white'}">${game.away_team}</div>
                         </div>
                     </div>
@@ -298,139 +351,170 @@
                         <button onclick="toggleBet('${game.id}', 'X')" class="btn-bet ${selections[game.id].includes('X') ? 'active-draw' : ''}">X</button>
                         <button onclick="toggleBet('${game.id}', '2')" class="btn-bet ${selections[game.id].includes('2') ? 'active-win' : ''}">2</button>
                     </div>
-                    <div onclick="removeGame('${game.id}')" class="text-red-700/60 hover:text-red-500 cursor-pointer ml-1 p-1 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <div onclick="removeGame('${game.id}')" class="text-red-700/60 hover:text-red-500 cursor-pointer ml-1 p-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </div>
                 `;
                 list.appendChild(row);
             });
-
-            document.getElementById('gameCount').innerText = `${activeCount} Jogos Ativos`;
-            
-            if (excludedGames.size > 0) exclSection.classList.remove('hidden');
-            else exclSection.classList.add('hidden');
+            document.getElementById('gameCount').innerText = `${activeCount} JOGOS ATIVOS`;
+            if (excludedGames.size > 0) exclSection.classList.remove('hidden'); else exclSection.classList.add('hidden');
         }
 
-        function toggleAnchor(id) {
-            if (anchors.has(id)) anchors.delete(id);
-            else {
-                anchors.add(id);
-                selections[id] = [selections[id][0]];
-            }
-            renderGames();
+        function toggleAnchor(id) { 
+            if (anchors.has(id)) anchors.delete(id); 
+            else { anchors.add(id); selections[id] = [selections[id][0]]; } 
+            renderGames(); 
         }
-
-        function toggleBet(gameId, val) {
-            if (anchors.has(gameId)) selections[gameId] = [val];
-            else {
-                let current = selections[gameId];
-                if (current.includes(val)) {
-                    if (current.length > 1) selections[gameId] = current.filter(v => v !== val);
-                } else {
-                    selections[gameId].push(val);
-                }
-            }
-            renderGames();
+        function toggleBet(id, v) { 
+            if (anchors.has(id)) selections[id] = [v]; 
+            else { 
+                let c = selections[id]; 
+                if (c.includes(v)) { if (c.length > 1) selections[id] = c.filter(x => x !== v); } 
+                else selections[id].push(v); 
+            } 
+            renderGames(); 
         }
-
-        function removeGame(id) {
-            excludedGames.add(id);
-            anchors.delete(id);
-            renderGames();
-        }
+        function removeGame(id) { excludedGames.add(id); anchors.delete(id); renderGames(); }
 
         function generateMatrix() {
-            if (anchors.size === 0) {
-                alert("Selecione ao menos um jogo Âncora (estrela).");
-                return;
-            }
-
+            if (anchors.size === 0) { alert("Marque ao menos uma ÂNCORA (estrela)."); return; }
             const invTotal = parseFloat(document.getElementById('investValue').value);
             const qtyReq = parseInt(document.getElementById('ticketQty').value);
             const resultsDiv = document.getElementById('results');
-            
-            resultsDiv.innerHTML = '<div class="text-center py-6"><div class="loader mx-auto mb-2"></div><p class="text-[10px] text-gray-500 uppercase tracking-widest font-black">Sniper processando bilhetes...</p></div>';
-
-            const anc_data = [];
-            const var_data = [];
-
+            resultsDiv.innerHTML = '<div class="text-center py-6"><div class="loader mx-auto"></div></div>';
+            const anc_data = []; const var_data = [];
             allGames.forEach(game => {
                 if (excludedGames.has(game.id)) return;
-                const sels = selections[game.id];
-                if (!sels) return;
-
+                const sels = selections[game.id]; if (!sels) return;
                 let odds = { "1": 2.0, "X": 3.0, "2": 2.0 };
                 try {
                     const mk = game.bookmakers[0].markets[0].outcomes;
-                    const hO = mk.find(o => o.name === game.home_team)?.price || 2.0;
-                    const aO = mk.find(o => o.name === game.away_team)?.price || 2.0;
-                    const dO = mk.find(o => o.name === 'Draw')?.price || 3.0;
-                    odds = { "1": hO, "X": dO, "2": aO };
+                    odds["1"] = parseFloat(mk.find(o => o.name === game.home_team)?.price || 2.0);
+                    odds["2"] = parseFloat(mk.find(o => o.name === game.away_team)?.price || 2.0);
+                    odds["X"] = parseFloat(mk.find(o => o.name === 'Draw')?.price || 3.0);
                 } catch(e) {}
-
-                if (anchors.has(game.id)) {
-                    const res = sels[0];
-                    anc_data.push({ j: `${game.home_team} x ${game.away_team}`, r: res, o: odds[res] });
-                } else {
-                    const ops = sels.map(s => ({ j: `${game.home_team} x ${game.away_team}`, r: s, o: odds[s] }));
-                    var_data.push(ops);
-                }
+                if (anchors.has(game.id)) anc_data.push({ j: `${game.home_team} x ${game.away_team}`, r: sels[0], o: odds[sels[0]] });
+                else var_data.push(sels.map(s => ({ j: `${game.home_team} x ${game.away_team}`, r: s, o: odds[s] })));
             });
-
             const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
             let combos = var_data.length > 0 ? cartesian(...var_data) : [[]];
-            
-            const finalQty = Math.min(combos.length, qtyReq);
+            const totalCombos = combos.length;
+            const finalQty = Math.min(totalCombos, qtyReq);
             combos = combos.sort(() => 0.5 - Math.random()).slice(0, finalQty);
             const stake = invTotal / combos.length;
+            generatedTickets = combos.map((combo, idx) => {
+                let oddT = anc_data.reduce((acc, c) => acc * c.o, 1);
+                const comboItems = Array.isArray(combo) ? combo : (combo ? [combo] : []);
+                const gamesArr = [...anc_data.map(a => ({...a, type: 'FIXO'})), ...comboItems.map(v => ({...v, type: 'VAR'}))];
+                gamesArr.forEach(g => { if(g.type === 'VAR') oddT *= g.o });
+                return { id: idx, odd: oddT, stake: stake, games: gamesArr, isSaved: false };
+            });
+            renderTickets(resultsDiv, generatedTickets, finalQty, totalCombos);
+            window.scrollTo({ top: resultsDiv.offsetTop - 10, behavior: 'smooth' });
+        }
 
-            resultsDiv.innerHTML = `<h2 class="font-black text-white mb-4 uppercase text-[10px] tracking-[0.2em] text-center bg-[#121e24] py-2 border-y border-[#1e2d35]">📋 Matriz Sniper: ${combos.length} Bilhetes</h2>`;
-
-            combos.forEach((combo, i) => {
-                let oddTotal = anc_data.reduce((acc, curr) => acc * curr.o, 1);
-                let rowsHtml = anc_data.map(a => `
+        function renderTickets(container, tickets, x, y) {
+            container.innerHTML = `<h2 class="font-black text-white mb-3 uppercase text-[10px] tracking-widest text-center">Gerados ${x} bilhetes de ${y} possíveis</h2>`;
+            tickets.forEach((t, i) => {
+                const card = document.createElement('details'); 
+                card.className = "bg-[#121e24] border border-[#1e2d35] rounded-xl shadow-xl mb-3 overflow-hidden group";
+                let rows = t.games.map(g => `
                     <tr>
-                        <td class="py-1 text-[10px] text-white font-black">${a.j}</td>
-                        <td class="text-[10px] text-green-500 font-black text-right uppercase italic">ÂNCORA: ${a.r}</td>
-                        <td class="text-right text-[10px] text-gray-500 px-1 font-bold">${a.o.toFixed(2)}</td>
+                        <td class="py-1 text-[10px] ${g.type === 'FIXO' ? 'text-white' : 'text-gray-400'} font-bold">${g.j}</td>
+                        <td class="text-[10px] ${g.type === 'FIXO' ? 'text-green-500 italic' : 'text-white'} font-black text-right uppercase">${g.type === 'FIXO' ? 'FIXO: ' : ''}${g.r}</td>
+                        <td class="text-right text-[10px] text-gray-500 px-1 font-bold">${parseFloat(g.o).toFixed(2)}</td>
                     </tr>
                 `).join('');
-                
-                const comboArr = Array.isArray(combo) ? combo : [combo];
-                comboArr.forEach(v => {
-                    if (v && v.o) {
-                        oddTotal *= v.o;
-                        rowsHtml += `
-                            <tr>
-                                <td class="py-1 text-[10px] text-gray-400 font-bold">${v.j}</td>
-                                <td class="text-[10px] text-white font-black text-right uppercase">${v.r}</td>
-                                <td class="text-right text-[10px] text-gray-500 px-1 font-bold">${v.o.toFixed(2)}</td>
-                            </tr>
-                        `;
-                    }
-                });
-
-                const ret = stake * oddTotal;
-
-                const card = document.createElement('div');
-                card.className = "bg-[#121e24] border border-[#1e2d35] rounded-xl p-4 shadow-2xl mb-4";
                 card.innerHTML = `
-                    <div class="flex justify-between items-center border-b border-[#1e2d35] pb-2 mb-2">
-                        <span class="text-[9px] font-black text-green-500 uppercase italic">BILHETE #${i+1}</span>
-                        <span class="text-[11px] text-white font-bold">Ganho: <b class="text-green-500">R$ ${ret.toFixed(2)}</b></span>
-                    </div>
-                    <table class="w-full">
-                        ${rowsHtml}
-                    </table>
-                    <div class="mt-3 pt-2 border-t border-[#1e2d35] flex justify-between items-center">
-                        <span class="text-[9px] text-gray-500 font-bold uppercase">ODD: <b class="text-gray-300 font-black">${oddTotal.toFixed(2)}</b></span>
-                        <span class="text-[9px] text-gray-500 font-bold uppercase">APOSTA: <b class="text-gray-300 font-black">R$ ${stake.toFixed(2)}</b></span>
+                    <summary class="p-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] font-black text-green-500 uppercase italic">BILHETE #${i+1}</span>
+                            <div class="text-right">
+                                <span class="text-[9px] text-gray-500 font-bold uppercase mr-3">ODD: ${t.odd.toFixed(2)}</span>
+                                <span class="text-[10px] text-white font-bold">GANHO: <b class="text-green-500">R$ ${(t.stake*t.odd).toFixed(2)}</b></span>
+                            </div>
+                        </div>
+                    </summary>
+                    <div class="px-3 pb-3">
+                        <table class="w-full mb-3">${rows}</table>
+                        <div class="flex gap-2 border-t border-[#1e2d35] pt-3">
+                            <button id="save-btn-${i}" onclick="saveTicketToHistory(${i})" ${t.isSaved ? 'disabled' : ''} class="flex-1 bg-blue-600 text-white py-1.5 rounded text-[9px] font-black uppercase transition-all ${t.isSaved ? 'btn-used' : ''}">
+                                ${t.isSaved ? 'Salvo' : 'Salvar Bet'}
+                            </button>
+                            <button id="zap-btn-${i}" onclick="shareTicket(${i})" class="flex-1 bg-green-600 text-white py-1.5 rounded text-[9px] font-black uppercase transition-all">
+                                Zap
+                            </button>
+                        </div>
                     </div>
                 `;
-                resultsDiv.appendChild(card);
+                container.appendChild(card);
             });
-            
-            window.scrollTo({ top: resultsDiv.offsetTop - 20, behavior: 'smooth' });
+        }
+
+        function shareTicket(index) {
+            const btn = document.getElementById(`zap-btn-${index}`);
+            if (btn) {
+                btn.classList.add('btn-processing');
+                setTimeout(() => btn.classList.remove('btn-processing'), 1500);
+            }
+            const t = generatedTickets[index];
+            let text = `🎯 *MAGRAOBET SNIPER*\n\n🎫 *BILHETE #${index+1}*\n`;
+            t.games.forEach(g => text += `${g.type === 'FIXO' ? '⭐' : '🔹'} ${g.j}: *${g.r}* (${parseFloat(g.o).toFixed(2)})\n`);
+            text += `\n📈 *Odd Total:* ${t.odd.toFixed(2)}\n💰 *Investimento:* R$ ${t.stake.toFixed(2)}\n💵 *Retorno:* R$ ${(t.stake*t.odd).toFixed(2)}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function saveTicketToHistory(index) {
+            const t = generatedTickets[index];
+            if (t.isSaved) return;
+            const history = JSON.parse(localStorage.getItem('magraobet_history') || '[]');
+            history.unshift({...t, date: new Date().toISOString()});
+            localStorage.setItem('magraobet_history', JSON.stringify(history.slice(0, 50)));
+            t.isSaved = true;
+            const btn = document.getElementById(`save-btn-${index}`);
+            if (btn) { 
+                btn.disabled = true; 
+                btn.classList.add('btn-used'); 
+                btn.innerText = 'Salvo'; 
+            }
+            showToast("Salvo no Histórico!");
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            const empty = document.getElementById('emptyHistory');
+            const history = JSON.parse(localStorage.getItem('magraobet_history') || '[]');
+            if (history.length > 0) {
+                empty.classList.add('hidden'); list.innerHTML = '';
+                history.forEach((t, i) => {
+                    const d = new Date(t.date);
+                    const card = document.createElement('details');
+                    card.className = "bg-[#0b161b] border border-[#1e2d35] rounded-lg relative opacity-90 group";
+                    let rows = t.games.map(g => `<div class="flex justify-between text-[9px] border-b border-[#1e2d35]/30 py-1"><span>${g.j}</span><span class="font-bold text-white">${g.r}</span></div>`).join('');
+                    card.innerHTML = `
+                        <summary class="p-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[8px] text-gray-500 font-bold">${d.toLocaleString()}</span>
+                                <div class="text-right">
+                                    <span class="text-green-500 text-[10px] font-black mr-4">R$ ${(t.stake*t.odd).toFixed(2)}</span>
+                                    <button onclick="deleteHistoryItem(${i})" class="text-red-500 text-[10px]">✕</button>
+                                </div>
+                            </div>
+                        </summary>
+                        <div class="px-3 pb-3">${rows}</div>
+                    `;
+                    list.appendChild(card);
+                });
+            } else { empty.classList.remove('hidden'); list.innerHTML = ''; }
+        }
+
+        function deleteHistoryItem(index) {
+            const history = JSON.parse(localStorage.getItem('magraobet_history') || '[]');
+            history.splice(index, 1);
+            localStorage.setItem('magraobet_history', JSON.stringify(history));
+            renderHistory();
         }
     </script>
 </body>
