@@ -66,7 +66,6 @@
             border: 1px solid #3d4d56;
         }
 
-        /* Acordeão Estilo Flashscore */
         summary { list-style: none; cursor: pointer; }
         summary::-webkit-details-marker { display: none; }
         details[open] summary { border-bottom: 1px solid #1e2d35; padding-bottom: 8px; margin-bottom: 8px; }
@@ -95,7 +94,6 @@
 <body class="p-2 sm:p-4">
 
     <div class="max-w-2xl mx-auto">
-        <!-- HEADER -->
         <header class="text-center mb-4">
             <h1 class="text-xl font-black text-white flex items-center justify-center gap-2 tracking-tighter uppercase">
                 🎯 MAGRAOBET <span class="text-[10px] bg-green-600 px-2 py-0.5 rounded italic">Sniper Pro V2.8</span>
@@ -105,7 +103,6 @@
             </div>
         </header>
 
-        <!-- CONFIG CARD -->
         <div class="bg-[#121e24] p-4 rounded-xl border border-[#1e2d35] mb-4 shadow-xl">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div class="flex items-center gap-2 bg-[#1e2d35] rounded border border-[#2d3d46] px-3 py-2">
@@ -129,7 +126,6 @@
             </div>
         </div>
 
-        <!-- LEGENDA -->
         <div class="flex items-center justify-between px-2 mb-2 py-1 bg-[#0b161b] border-x border-[#1e2d35]">
             <div class="flex gap-3 text-[8px] uppercase font-bold tracking-wider text-gray-400">
                 <span><span class="text-[#ffab00]">⭐</span> ÂNCORA (FIXO)</span>
@@ -138,38 +134,24 @@
             <div class="text-[8px] text-gray-500 font-bold" id="gameCount">0 JOGOS ATIVOS</div>
         </div>
 
-        <!-- LOADING -->
         <div id="loading" class="flex flex-col items-center justify-center py-10">
             <div class="loader mb-2"></div>
             <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest">Sincronizando...</span>
         </div>
 
-        <!-- ERRO -->
-        <div id="errorDisplay" class="hidden bg-red-900/20 border border-red-500/50 p-4 rounded-lg mb-4 text-center">
-            <p class="text-xs text-red-400 font-bold mb-2" id="errorMessage">Erro de rede</p>
-            <div class="flex gap-2 justify-center">
-                <button onclick="fetchOdds()" class="text-[10px] bg-red-500 text-white px-4 py-2 rounded font-bold uppercase tracking-widest">🔄 Tentar Novamente</button>
-            </div>
-        </div>
-
-        <!-- LISTA DE JOGOS -->
         <div id="gameList" class="bg-[#121e24] rounded-t-xl border border-[#1e2d35] shadow-2xl"></div>
 
-        <!-- BOTÃO GERAR -->
         <button onclick="generateMatrix()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-b-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm mb-6">
             🚀 Gerar Bilhetes Sniper
         </button>
 
-        <!-- LIXEIRA -->
         <div id="excludedSection" class="hidden mt-6 mb-8">
             <h3 class="text-[9px] text-gray-600 font-black uppercase mb-2 ml-2 tracking-widest">🗑️ Jogos Removidos (Restaurar)</h3>
             <div id="excludedList" class="flex flex-wrap gap-2 px-2"></div>
         </div>
 
-        <!-- RESULTADOS -->
         <div id="results" class="mt-4 space-y-4"></div>
 
-        <!-- HISTÓRICO -->
         <div id="historySection" class="mt-12 pb-24">
             <details class="group">
                 <summary class="flex items-center justify-center gap-2 text-xs font-black text-gray-500 uppercase tracking-[0.2em] border-b border-[#1e2d35] pb-2 mb-4">
@@ -235,21 +217,15 @@
 
         async function fetchOdds() {
             const list = document.getElementById('gameList');
-            const errorDiv = document.getElementById('errorDisplay');
             const loader = document.getElementById('loading');
-            errorDiv.classList.add('hidden');
             loader.classList.remove('hidden');
-            list.innerHTML = '';
             try {
                 const url = `https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
                 const response = await fetch(url);
-                if (!response.ok) throw new Error();
                 allGames = await response.json();
                 allGames.forEach(g => selections[g.id] = ["1"]);
                 renderGames();
-            } catch (error) {
-                errorDiv.classList.remove('hidden');
-            } finally {
+            } catch (error) {} finally {
                 loader.classList.add('hidden');
             }
         }
@@ -264,7 +240,7 @@
                 mock.push({
                     id: `m_${i}`, home_team: t1, away_team: t2,
                     commence_time: new Date(Date.now() + (i * 14400000)).toISOString(),
-                    bookmakers: [{ markets: [{ outcomes: [{name: t1, price: (1.5 + Math.random()).toFixed(2)}, {name: t2, price: (2.5 + Math.random()).toFixed(2)}, {name: "Draw", price: 3.10}] }] }]
+                    bookmakers: [{ markets: [{ outcomes: [{name: t1, price: 1.9}, {name: t2, price: 2.8}, {name: "Draw", price: 3.1}] }] }]
                 });
             }
             allGames = mock;
@@ -355,8 +331,17 @@
             resultsDiv.innerHTML = '<div class="text-center py-6"><div class="loader mx-auto"></div></div>';
             
             const anc_data = []; const var_data = [];
-            allGames.forEach(game => {
-                if (excludedGames.has(game.id)) return;
+            const now = new Date();
+            const limit = new Date();
+            limit.setDate(now.getDate() + currentPeriod);
+
+            // CORREÇÃO: Filtramos para gerar apenas os jogos visíveis
+            const filteredGames = allGames.filter(g => {
+                const dt = new Date(g.commence_time);
+                return dt > now && dt <= limit && !excludedGames.has(g.id);
+            });
+
+            filteredGames.forEach(game => {
                 const sels = selections[game.id]; if (!sels) return;
                 let odds = { "1": 2.0, "X": 3.0, "2": 2.0 };
                 try {
@@ -385,6 +370,7 @@
             });
 
             renderTickets(resultsDiv, finalQty, total);
+            window.scrollTo({ top: resultsDiv.offsetTop - 10, behavior: 'smooth' });
         }
 
         function renderTickets(container, x, y) {
@@ -392,7 +378,7 @@
             generatedTickets.forEach((t, i) => {
                 const card = document.createElement('details'); 
                 card.className = "bg-[#121e24] border border-[#1e2d35] rounded-xl mb-3 overflow-hidden group";
-                let rows = t.games.map(g => `<tr><td class="py-1 text-[10px] ${g.type === 'FIXO' ? 'text-white' : 'text-gray-400'} font-bold truncate-name">${g.j}</td><td class="text-[10px] font-black text-right text-white uppercase">${g.r}</td></tr>`).join('');
+                let rows = t.games.map(g => `<tr><td class="py-1 text-[10px] ${g.type === 'FIXO' ? 'text-white' : 'text-gray-400'} truncate-name">${g.j}</td><td class="text-[10px] font-black text-right text-white uppercase">${g.r}</td></tr>`).join('');
                 card.innerHTML = `
                     <summary class="p-3 flex justify-between items-center">
                         <span class="text-[9px] font-black text-green-500 uppercase italic">BILHETE #${i+1}</span>
@@ -401,12 +387,8 @@
                     <div class="px-3 pb-3">
                         <table class="w-full mb-3">${rows}</table>
                         <div class="flex gap-2 border-t border-[#1e2d35] pt-3">
-                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-blue-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all ${t.isSaved ? 'btn-used' : ''}">
-                                ${t.isSaved ? 'Salvo' : 'Salvar Bet'}
-                            </button>
-                            <button onclick="shareTicket(${i})" id="z-${i}" class="flex-1 bg-green-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all">
-                                Zap
-                            </button>
+                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-blue-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Salvar Bet</button>
+                            <button onclick="shareTicket(${i})" id="z-${i}" class="flex-1 bg-green-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Zap</button>
                         </div>
                     </div>
                 `;
