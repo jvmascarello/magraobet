@@ -45,25 +45,17 @@
         .star-icon { cursor: pointer; flex-shrink: 0; transition: transform 0.2s; }
         .star-active { color: #ffab00; transform: scale(1.1); }
 
+        .team-shield-img {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
         .truncate-name {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-        }
-
-        .team-shield {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 8px;
-            font-weight: 900;
-            color: white;
-            flex-shrink: 0;
-            background: linear-gradient(135deg, #2d3d46 0%, #1e2d35 100%);
-            border: 1px solid #3d4d56;
         }
 
         summary { list-style: none; cursor: pointer; }
@@ -72,7 +64,7 @@
 
         @media (max-width: 640px) {
             .game-time { font-size: 0.65rem; min-width: 35px; text-align: center; }
-            .team-name { font-size: 0.8rem; line-height: 1.2; max-width: 90px; }
+            .team-name { font-size: 0.78rem; line-height: 1.2; max-width: 85px; }
             .btn-bet { font-size: 0.75rem; height: 32px; }
             .game-row { gap: 6px; padding: 8px 6px; }
         }
@@ -94,15 +86,17 @@
 <body class="p-2 sm:p-4">
 
     <div class="max-w-2xl mx-auto">
+        <!-- HEADER -->
         <header class="text-center mb-4">
             <h1 class="text-xl font-black text-white flex items-center justify-center gap-2 tracking-tighter uppercase">
-                🎯 MAGRAOBET <span class="text-[10px] bg-green-600 px-2 py-0.5 rounded italic">Sniper Pro V2.8</span>
+                🎯 MAGRAOBET <span class="text-[10px] bg-green-600 px-2 py-0.5 rounded italic uppercase">Sniper Pro V3.0</span>
             </h1>
             <div id="testModeBadge" class="hidden mt-1">
                 <span class="text-[9px] bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-0.5 rounded-full font-bold uppercase tracking-widest">Modo Teste Ativo</span>
             </div>
         </header>
 
+        <!-- CONFIG CARD -->
         <div class="bg-[#121e24] p-4 rounded-xl border border-[#1e2d35] mb-4 shadow-xl">
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div class="flex items-center gap-2 bg-[#1e2d35] rounded border border-[#2d3d46] px-3 py-2">
@@ -126,40 +120,47 @@
             </div>
         </div>
 
+        <!-- LEGENDA -->
         <div class="flex items-center justify-between px-2 mb-2 py-1 bg-[#0b161b] border-x border-[#1e2d35]">
             <div class="flex gap-3 text-[8px] uppercase font-bold tracking-wider text-gray-400">
-                <span><span class="text-[#ffab00]">⭐</span> ÂNCORA (FIXO)</span>
+                <span><span class="text-[#ffab00]">⭐</span> FIXAR ÂNCORA</span>
                 <span><span class="text-red-500 font-bold">🗑️</span> OFF</span>
             </div>
             <div class="text-[8px] text-gray-500 font-bold" id="gameCount">0 JOGOS ATIVOS</div>
         </div>
 
+        <!-- LOADING -->
         <div id="loading" class="flex flex-col items-center justify-center py-10">
             <div class="loader mb-2"></div>
-            <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest">Sincronizando...</span>
+            <span class="text-[10px] text-gray-500 uppercase font-black tracking-widest text-center">Sincronizando Jogos e Escudos...</span>
         </div>
 
-        <div id="gameList" class="bg-[#121e24] rounded-t-xl border border-[#1e2d35] shadow-2xl"></div>
+        <!-- LISTA DE JOGOS -->
+        <div id="gameList" class="bg-[#121e24] rounded-t-xl border border-[#1e2d35] shadow-2xl overflow-hidden min-h-[100px]"></div>
 
+        <!-- BOTÃO GERAR -->
         <button onclick="generateMatrix()" class="w-full bg-green-600 hover:bg-green-500 text-white font-black py-4 rounded-b-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm mb-6">
             🚀 Gerar Bilhetes Sniper
         </button>
 
+        <!-- LIXEIRA -->
         <div id="excludedSection" class="hidden mt-6 mb-8">
             <h3 class="text-[9px] text-gray-600 font-black uppercase mb-2 ml-2 tracking-widest">🗑️ Jogos Removidos (Restaurar)</h3>
             <div id="excludedList" class="flex flex-wrap gap-2 px-2"></div>
         </div>
 
+        <!-- RESULTADOS -->
         <div id="results" class="mt-4 space-y-4"></div>
 
+        <!-- HISTÓRICO -->
         <div id="historySection" class="mt-12 pb-24">
             <details class="group">
                 <summary class="flex items-center justify-center gap-2 text-xs font-black text-gray-500 uppercase tracking-[0.2em] border-b border-[#1e2d35] pb-2 mb-4">
                     <span>📂 Histórico de Apostas</span>
                     <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 9l-7 7-7-7" stroke-width="2"/></svg>
                 </summary>
-                <div id="historyList" class="space-y-3"></div>
-                <div id="emptyHistory" class="text-center py-8 text-gray-700 italic text-xs">Nenhum histórico disponível.</div>
+                <div id="historyList" class="space-y-3 px-1"></div>
+                <div id="emptyHistory" class="text-center py-8 text-gray-700 italic text-xs">Nenhuma aposta salva no histórico.</div>
             </details>
         </div>
     </div>
@@ -168,6 +169,31 @@
 
     <script>
         const API_KEY = "382e534fa4dfaa17600726e74b847a4e";
+        
+        // Mapeamento de escudos - Usando URLs mais estáveis de CDNs esportivas
+        const teamIconMap = {
+            "Flamengo": "https://s.glbimg.com/es/ge/f/diretorio/2018/04/10/flamengo-2018.svg",
+            "Palmeiras": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/palmeiras.svg",
+            "Botafogo": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/botafogo.svg",
+            "Vasco da Gama": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/vasco.svg",
+            "Corinthians": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/corinthians.svg",
+            "São Paulo": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/sao_paulo.svg",
+            "Grêmio": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/gremio.svg",
+            "Internacional": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/internacional.svg",
+            "Atlético Mineiro": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/atletico_mg.svg",
+            "Cruzeiro": "https://s.glbimg.com/es/ge/f/diretorio/2021/06/25/cruzeiro.svg",
+            "Bahia": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/bahia.svg",
+            "Fluminense": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/fluminense.svg",
+            "Fortaleza": "https://s.glbimg.com/es/ge/f/diretorio/2018/02/15/fortaleza.svg",
+            "Athletico Paranaense": "https://s.glbimg.com/es/ge/f/diretorio/2018/12/11/athletico-pr.svg",
+            "Cuiabá": "https://s.glbimg.com/es/ge/f/diretorio/2021/04/05/cuiaba.svg",
+            "Vitória": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/vitoria.svg",
+            "Criciúma": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/criciuma.svg",
+            "Bragantino": "https://s.glbimg.com/es/ge/f/diretorio/2020/01/21/bragantino.svg",
+            "Juventude": "https://s.glbimg.com/es/ge/f/diretorio/2015/02/11/juventude.svg",
+            "Atlético Goianiense": "https://s.glbimg.com/es/ge/f/diretorio/2020/07/02/atletico_go.svg"
+        };
+
         let allGames = [];
         let selections = {}; 
         let anchors = new Set();
@@ -225,14 +251,16 @@
                 allGames = await response.json();
                 allGames.forEach(g => selections[g.id] = ["1"]);
                 renderGames();
-            } catch (error) {} finally {
+            } catch (error) {
+                alert("Erro ao buscar jogos. Verifique sua chave da API.");
+            } finally {
                 loader.classList.add('hidden');
             }
         }
 
         function useMockData() {
             document.getElementById('loading').classList.add('hidden');
-            const times = ["Flamengo", "Palmeiras", "Botafogo", "Vasco", "Corinthians", "São Paulo", "Grêmio", "Internacional", "Atlético-MG", "Cruzeiro"];
+            const times = Object.keys(teamIconMap);
             const mock = [];
             for (let i = 1; i <= 10; i++) {
                 let t1 = times[Math.floor(Math.random()*times.length)];
@@ -240,7 +268,7 @@
                 mock.push({
                     id: `m_${i}`, home_team: t1, away_team: t2,
                     commence_time: new Date(Date.now() + (i * 14400000)).toISOString(),
-                    bookmakers: [{ markets: [{ outcomes: [{name: t1, price: 1.9}, {name: t2, price: 2.8}, {name: "Draw", price: 3.1}] }] }]
+                    bookmakers: [{ markets: [{ outcomes: [{name: t1, price: 1.8}, {name: t2, price: 3.5}, {name: "Draw", price: 3.1}] }] }]
                 });
             }
             allGames = mock;
@@ -248,24 +276,31 @@
             renderGames();
         }
 
-        function getShield(name) { return name.substring(0, 2).toUpperCase(); }
+        function getShieldUrl(name) {
+            return teamIconMap[name] || `https://api.dicebear.com/7.x/initials/svg?seed=${name}&backgroundColor=1e2d35`;
+        }
 
         function renderGames() {
             const list = document.getElementById('gameList');
             const exclSection = document.getElementById('excludedSection');
             const exclList = document.getElementById('excludedList');
             list.innerHTML = ''; exclList.innerHTML = '';
+            
             const now = new Date();
             const limit = new Date();
             limit.setDate(now.getDate() + currentPeriod);
-            const filtered = allGames.filter(g => new Date(g.commence_time) > now && new Date(g.commence_time) <= limit);
+            
+            const filtered = allGames.filter(g => {
+                const dt = new Date(g.commence_time);
+                return dt > now && dt <= limit;
+            });
             
             let count = 0;
             filtered.forEach(game => {
                 if (excludedGames.has(game.id)) {
                     const b = document.createElement('div');
                     b.onclick = () => { excludedGames.delete(game.id); renderGames(); };
-                    b.className = "bg-[#1e2d35] border border-[#2d3d46] px-2 py-1 rounded text-[8px] font-bold text-gray-500 cursor-pointer uppercase flex items-center gap-1";
+                    b.className = "bg-[#1e2d35] border border-[#2d3d46] px-2 py-1 rounded text-[8px] font-bold text-gray-500 cursor-pointer uppercase flex items-center gap-1 hover:bg-green-900 transition-colors";
                     b.innerHTML = `<span>+</span> ${game.home_team} x ${game.away_team}`;
                     exclList.appendChild(b);
                     return;
@@ -283,13 +318,13 @@
                         <div class="font-black text-gray-400 text-[9px]">${dt.getDate()}/${dt.getMonth()+1}</div>
                         <div class="text-[8px] text-gray-600 font-bold">${dt.getHours()}:${dt.getMinutes().toString().padStart(2, '0')}</div>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <div class="flex-1 min-w-0 flex flex-col gap-1">
                         <div class="flex items-center gap-2">
-                            <div class="team-shield">${getShield(game.home_team)}</div>
+                            <img src="${getShieldUrl(game.home_team)}" class="team-shield-img">
                             <div class="team-name truncate-name font-bold ${isAnchor ? 'text-green-500' : 'text-white'}">${game.home_team}</div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="team-shield">${getShield(game.away_team)}</div>
+                            <img src="${getShieldUrl(game.away_team)}" class="team-shield-img">
                             <div class="team-name truncate-name font-bold ${isAnchor ? 'text-green-500' : 'text-white'}">${game.away_team}</div>
                         </div>
                     </div>
@@ -298,7 +333,7 @@
                         <button onclick="toggleBet('${game.id}', 'X')" class="btn-bet ${selections[game.id].includes('X') ? 'active-draw' : ''}">X</button>
                         <button onclick="toggleBet('${game.id}', '2')" class="btn-bet ${selections[game.id].includes('2') ? 'active-win' : ''}">2</button>
                     </div>
-                    <div onclick="removeGame('${game.id}')" class="text-red-700/60 hover:text-red-500 cursor-pointer ml-1">
+                    <div onclick="removeGame('${game.id}')" class="text-red-700/60 hover:text-red-500 cursor-pointer ml-1 p-1">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </div>
                 `;
@@ -313,8 +348,9 @@
             renderGames(); 
         }
         function toggleBet(id, v) { 
-            if (anchors.has(id)) selections[id] = [v]; 
-            else { 
+            if (anchors.has(id)) {
+                selections[id] = [v]; // Se for âncora, só permite um
+            } else { 
                 let c = selections[id]; 
                 if (c.includes(v)) { if (c.length > 1) selections[id] = c.filter(x => x !== v); } 
                 else selections[id].push(v); 
@@ -323,8 +359,10 @@
         }
         function removeGame(id) { excludedGames.add(id); anchors.delete(id); renderGames(); }
 
+        // GERADOR DE MATRIZ CORRIGIDO
         function generateMatrix() {
-            if (anchors.size === 0) { alert("Selecione ao menos uma ÂNCORA."); return; }
+            if (anchors.size === 0) { alert("Marque ao menos uma ÂNCORA (Estrela) para os bilhetes terem sentido."); return; }
+            
             const invTotal = parseFloat(document.getElementById('investValue').value);
             const qtyReq = parseInt(document.getElementById('ticketQty').value);
             const resultsDiv = document.getElementById('results');
@@ -335,60 +373,78 @@
             const limit = new Date();
             limit.setDate(now.getDate() + currentPeriod);
 
-            // CORREÇÃO: Filtramos para gerar apenas os jogos visíveis
-            const filteredGames = allGames.filter(g => {
+            // CORREÇÃO: Pegar EXATAMENTE os jogos que estão na tela agora
+            const visibleGames = allGames.filter(g => {
                 const dt = new Date(g.commence_time);
                 return dt > now && dt <= limit && !excludedGames.has(g.id);
             });
 
-            filteredGames.forEach(game => {
-                const sels = selections[game.id]; if (!sels) return;
-                let odds = { "1": 2.0, "X": 3.0, "2": 2.0 };
+            visibleGames.forEach(game => {
+                const sels = selections[game.id] || ["1"];
+                let odds = { "1": 1.9, "X": 3.1, "2": 2.8 };
                 try {
                     const mk = game.bookmakers[0].markets[0].outcomes;
                     odds["1"] = parseFloat(mk.find(o => o.name === game.home_team).price);
                     odds["2"] = parseFloat(mk.find(o => o.name === game.away_team).price);
                     odds["X"] = parseFloat(mk.find(o => o.name === 'Draw').price);
                 } catch(e) {}
-                if (anchors.has(game.id)) anc_data.push({ j: `${game.home_team} x ${game.away_team}`, r: sels[0], o: odds[sels[0]] });
-                else var_data.push(sels.map(s => ({ j: `${game.home_team} x ${game.away_team}`, r: s, o: odds[s] })));
+                
+                if (anchors.has(game.id)) {
+                    const res = sels[0];
+                    anc_data.push({ j: `${game.home_team} x ${game.away_team}`, r: res, o: odds[res] });
+                } else {
+                    // Mesclagem Sniper
+                    var_data.push(sels.map(s => ({ j: `${game.home_team} x ${game.away_team}`, r: s, o: odds[s] })));
+                }
             });
 
+            // Lógica de Combinação (Produto Cartesiano)
             const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
             let combos = var_data.length > 0 ? cartesian(...var_data) : [[]];
-            const total = combos.length;
-            const finalQty = Math.min(total, qtyReq);
+            const totalCombos = combos.length;
+            const finalQty = Math.min(totalCombos, qtyReq);
+            
+            // Embaralhamento e Seleção
             combos = combos.sort(() => 0.5 - Math.random()).slice(0, finalQty);
             const stake = invTotal / combos.length;
 
             generatedTickets = combos.map((combo, idx) => {
                 let oddT = anc_data.reduce((acc, c) => acc * c.o, 1);
-                const comboItems = Array.isArray(combo) ? combo : [combo];
+                const comboItems = Array.isArray(combo) ? combo : (combo ? [combo] : []);
                 const gamesArr = [...anc_data.map(a => ({...a, type: 'FIXO'})), ...comboItems.map(v => ({...v, type: 'VAR'}))];
                 gamesArr.forEach(g => { if(g.type === 'VAR') oddT *= g.o });
                 return { id: idx, odd: oddT, stake: stake, games: gamesArr, isSaved: false };
             });
 
-            renderTickets(resultsDiv, finalQty, total);
+            renderTickets(resultsDiv, finalQty, totalCombos);
             window.scrollTo({ top: resultsDiv.offsetTop - 10, behavior: 'smooth' });
         }
 
         function renderTickets(container, x, y) {
-            container.innerHTML = `<h2 class="font-black text-white mb-3 uppercase text-[10px] text-center">Gerados ${x} bilhetes de ${y} possíveis</h2>`;
+            container.innerHTML = `<h2 class="font-black text-white mb-3 uppercase text-[10px] text-center tracking-widest">Gerados ${x} de ${y} bilhetes possíveis</h2>`;
             generatedTickets.forEach((t, i) => {
                 const card = document.createElement('details'); 
-                card.className = "bg-[#121e24] border border-[#1e2d35] rounded-xl mb-3 overflow-hidden group";
-                let rows = t.games.map(g => `<tr><td class="py-1 text-[10px] ${g.type === 'FIXO' ? 'text-white' : 'text-gray-400'} truncate-name">${g.j}</td><td class="text-[10px] font-black text-right text-white uppercase">${g.r}</td></tr>`).join('');
+                card.className = "bg-[#121e24] border border-[#1e2d35] rounded-xl shadow-xl mb-3 overflow-hidden group";
+                let rows = t.games.map(g => `
+                    <tr>
+                        <td class="py-1 text-[10px] ${g.type === 'FIXO' ? 'text-green-500 font-black italic' : 'text-gray-400 font-bold'}">${g.j}</td>
+                        <td class="text-[10px] font-black text-right text-white uppercase">${g.r}</td>
+                        <td class="text-right text-[10px] text-gray-500 px-2 font-bold">${g.o.toFixed(2)}</td>
+                    </tr>
+                `).join('');
                 card.innerHTML = `
-                    <summary class="p-3 flex justify-between items-center">
-                        <span class="text-[9px] font-black text-green-500 uppercase italic">BILHETE #${i+1}</span>
-                        <span class="text-[10px] text-white font-bold tracking-tight">RETORNO: <b class="text-green-500">R$ ${(t.stake*t.odd).toFixed(2)}</b></span>
+                    <summary class="p-3 flex justify-between items-center bg-[#18262e]">
+                        <span class="text-[9px] font-black text-green-500 uppercase italic tracking-tighter">BILHETE #${i+1}</span>
+                        <div class="text-right">
+                             <span class="text-[9px] text-gray-500 font-bold mr-2 uppercase">Odd: ${t.odd.toFixed(2)}</span>
+                             <span class="text-[10px] text-white font-bold tracking-tight">Retorno: <b class="text-green-500">R$ ${(t.stake*t.odd).toFixed(2)}</b></span>
+                        </div>
                     </summary>
                     <div class="px-3 pb-3">
-                        <table class="w-full mb-3">${rows}</table>
+                        <table class="w-full mb-3 border-separate border-spacing-y-1">${rows}</table>
                         <div class="flex gap-2 border-t border-[#1e2d35] pt-3">
-                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-blue-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Salvar Bet</button>
-                            <button onclick="shareTicket(${i})" id="z-${i}" class="flex-1 bg-green-600 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Zap</button>
+                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Salvar Bet</button>
+                            <button onclick="shareTicket(${i})" id="z-${i}" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded text-[9px] font-black uppercase transition-all">Zap</button>
                         </div>
                     </div>
                 `;
@@ -402,8 +458,8 @@
             setTimeout(() => btn.classList.remove('btn-processing'), 1500);
             const t = generatedTickets[idx];
             let text = `🎯 *MAGRAOBET SNIPER*\n\n🎫 *BILHETE #${idx+1}*\n`;
-            t.games.forEach(g => text += `${g.type === 'FIXO' ? '⭐' : '🔹'} ${g.j}: *${g.r}*\n`);
-            text += `\n📈 Odd: ${t.odd.toFixed(2)}\n💰 Invest: R$ ${t.stake.toFixed(2)}\n💵 Ganho: R$ ${(t.stake*t.odd).toFixed(2)}`;
+            t.games.forEach(g => text += `${g.type === 'FIXO' ? '⭐' : '🔹'} ${g.j}: *${g.r}* (${g.o.toFixed(2)})\n`);
+            text += `\n📈 Odd: ${t.odd.toFixed(2)}\n💰 Invest: R$ ${t.stake.toFixed(2)}\n💵 Retorno: R$ ${(t.stake*t.odd).toFixed(2)}`;
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
@@ -415,8 +471,7 @@
             localStorage.setItem('magraobet_history', JSON.stringify(h.slice(0,50)));
             t.isSaved = true;
             const btn = document.getElementById(`s-${idx}`);
-            btn.classList.add('btn-used');
-            btn.innerText = 'Salvo';
+            btn.classList.add('btn-used'); btn.innerText = 'Salvo';
             showToast("Salvo no Histórico!");
             renderHistory();
         }
@@ -432,14 +487,15 @@
                 card.className = "bg-[#0b161b] border border-[#1e2d35] rounded-lg mb-2 group";
                 card.innerHTML = `
                     <summary class="p-3 flex justify-between items-center text-[8px] font-bold">
-                        <span class="text-gray-500">${new Date(t.date).toLocaleString()}</span>
+                        <span class="text-gray-500 font-black uppercase tracking-tighter">${new Date(t.date).toLocaleString('pt-BR')}</span>
                         <div class="flex items-center gap-4">
-                            <span class="text-green-500 text-[10px] font-black">R$ ${(t.stake*t.odd).toFixed(2)}</span>
-                            <button onclick="deleteHistoryItem(${i})" class="text-red-500 hover:scale-125 transition-transform">✕</button>
+                            <span class="text-green-500 text-[10px] font-black uppercase">R$ ${(t.stake*t.odd).toFixed(2)}</span>
+                            <button onclick="deleteHistoryItem(${i})" class="text-red-500 text-[12px] font-black">✕</button>
                         </div>
                     </summary>
-                    <div class="px-3 pb-3 text-[9px] text-gray-400">
-                        ${t.games.map(g => `<div class="flex justify-between py-1 border-b border-[#1e2d35]/30"><span>${g.j}</span><span class="font-bold text-white">${g.r}</span></div>`).join('')}
+                    <div class="px-3 pb-3 text-[9px] text-gray-400 space-y-1">
+                        ${t.games.map(g => `<div class="flex justify-between border-b border-[#1e2d35]/30 py-1"><span>${g.j}</span><span class="font-black text-white">${g.r}</span></div>`).join('')}
+                        <div class="pt-2 text-right text-[7px] text-gray-500">Odd Total: ${t.odd.toFixed(2)}</div>
                     </div>
                 `;
                 list.appendChild(card);
