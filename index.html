@@ -9,10 +9,11 @@
     <style>
         :root {
             --brand-green: #00e676;
-            --brand-blue: #48cae4; /* Azul mais suave e legível */
+            --brand-blue: #48cae4;
             --dark-bg: #050a0c;
             --card-bg: #0d1518;
             --border-muted: #1a2e38;
+            --warning: #ffab00;
         }
 
         body {
@@ -23,7 +24,6 @@
             overflow-x: hidden;
         }
         
-        /* Layout de Linha de Jogo */
         .game-row {
             display: flex;
             align-items: center;
@@ -53,13 +53,11 @@
             background: var(--brand-green) !important; 
             color: #050a0c !important; 
             border-color: var(--brand-green) !important;
-            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.2);
         }
         .btn-bet.active-draw { 
             background: var(--brand-blue) !important; 
             color: #050a0c !important; 
             border-color: var(--brand-blue) !important;
-            box-shadow: 0 4px 12px rgba(72, 202, 228, 0.2);
         }
 
         .star-icon { cursor: pointer; flex-shrink: 0; color: #1f2937; transition: transform 0.2s; }
@@ -70,12 +68,6 @@
             height: 24px;
             object-fit: contain;
             flex-shrink: 0;
-        }
-
-        .truncate-name {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         summary { list-style: none; cursor: pointer; }
@@ -91,7 +83,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Botão Reset Refinado */
         .btn-reset-ui {
             background: rgba(239, 68, 68, 0.05);
             border: 1px solid rgba(239, 68, 68, 0.2);
@@ -101,24 +92,13 @@
             font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
             transition: all 0.2s;
         }
-        .btn-reset-ui:hover { background: rgba(239, 68, 68, 0.15); border-color: #ef4444; }
 
-        .btn-off {
-            color: #374151;
-            padding: 8px;
-            transition: color 0.2s;
-        }
+        .btn-off { color: #374151; padding: 8px; }
         .btn-off:hover { color: #f87171; }
 
-        .logo-header {
-            width: 100%;
-            max-width: 250px;
-            margin: 0 auto;
-            display: block;
-        }
+        .logo-header { width: 100%; max-width: 240px; margin: 0 auto; display: block; }
 
         .period-btn-active {
             background-color: var(--brand-green) !important;
@@ -126,20 +106,72 @@
             font-weight: 800 !important;
         }
 
-        /* Bilhetes Gerados - Readability */
+        .ticket-card {
+            background: #0d1518;
+            border: 1px solid #1a2e38;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
         .ticket-row td {
             padding: 10px 0;
             font-size: 11px;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.02);
         }
-        .ticket-name-col { font-weight: 500; color: #9ca3af; }
-        .ticket-anchor-col { font-weight: 700; color: var(--brand-green); font-style: italic; }
+        .text-anchor { font-weight: 800; color: var(--brand-green); }
+        .text-sniper { color: #9ca3af; }
+
+        /* Modal Alerta */
+        #warningModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-content {
+            background: #0d1518;
+            border: 1px solid var(--warning);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        input[type="checkbox"] {
+            accent-color: var(--brand-green);
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="p-2 sm:p-4">
 
+    <!-- MODAL DE ALERTA DE ÂNCORA FALSA -->
+    <div id="warningModal">
+        <div class="modal-content">
+            <div class="flex items-center gap-3 text-warning mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4m0 4h.01" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <h2 class="text-lg font-black uppercase tracking-tight">Âncora Falsa</h2>
+            </div>
+            <p class="text-xs text-gray-400 mb-5 leading-relaxed">
+                Você definiu apenas <b class="text-white">1 resultado</b> para os jogos Sniper abaixo. Isso cria uma "Âncora Falsa" que impede a variação matemática da matriz:
+            </p>
+            <div id="fakeAnchorList" class="space-y-2 mb-6 max-h-32 overflow-y-auto pr-2"></div>
+            <div class="flex gap-3">
+                <button onclick="closeWarning()" class="flex-1 bg-[#1a2e38] text-gray-400 font-bold py-3 rounded-xl text-[10px] uppercase">Corrigir</button>
+                <button onclick="forceGenerate()" class="flex-1 bg-warning text-black font-black py-3 rounded-xl text-[10px] uppercase">Gerar Assim Mesmo</button>
+            </div>
+        </div>
+    </div>
+
     <div class="max-w-2xl mx-auto">
-        <!-- LOGO -->
         <header class="text-center mb-6 pt-2">
             <img id="mainLogo" src="" alt="M10BET SNIPER PRO" class="logo-header">
             <div id="statusBadge" class="mt-4">
@@ -147,7 +179,6 @@
             </div>
         </header>
 
-        <!-- CONFIG -->
         <div class="bg-[#0d1518] p-5 rounded-2xl border border-[#1a2e38] mb-4 shadow-2xl relative">
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="flex flex-col gap-1 bg-[#142127] rounded-lg border border-[#1a2e38] p-3">
@@ -155,67 +186,68 @@
                     <div class="flex items-center text-white font-bold"><span class="mr-1 text-gray-600">R$</span><input type="number" id="investValue" value="50" class="bg-transparent text-lg w-full outline-none"></div>
                 </div>
                 <div class="flex flex-col gap-1 bg-[#142127] rounded-lg border border-[#1a2e38] p-3">
-                    <label class="text-[8px] uppercase text-gray-500 font-black tracking-widest">Bilhetes</label>
+                    <label class="text-[8px] uppercase text-gray-500 font-black tracking-widest">Qtd Bilhetes</label>
                     <input type="number" id="ticketQty" value="10" class="bg-transparent text-lg text-white font-bold outline-none">
                 </div>
             </div>
             
             <div class="flex gap-2">
                 <div class="flex flex-1 gap-1">
-                    <button onclick="setPeriod(3)" id="p3" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all">3 DIAS</button>
-                    <button onclick="setPeriod(4)" id="p4" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all">4 DIAS</button>
-                    <button onclick="setPeriod(5)" id="p5" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all">5 DIAS</button>
+                    <button onclick="setPeriod(3)" id="p3" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase">3D</button>
+                    <button onclick="setPeriod(4)" id="p4" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase">4D</button>
+                    <button onclick="setPeriod(5)" id="p5" class="period-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase">5D</button>
                 </div>
                 <button onclick="resetAllSelections()" class="btn-reset-ui">Reset</button>
             </div>
         </div>
 
-        <!-- INFO -->
-        <div class="flex items-center justify-between px-3 mb-3 py-2 bg-transparent">
-            <div class="flex gap-4 text-[9px] uppercase font-bold tracking-widest text-gray-500">
-                <span>⭐ ÂNCORAS: <b id="anchorCount" class="text-white">0</b>/4</span>
-            </div>
-            <div class="text-[9px] text-gray-600 font-bold" id="gameCount">BUSCANDO...</div>
+        <div class="flex items-center justify-between px-3 mb-3 py-1">
+            <div class="text-[9px] uppercase font-bold text-gray-600">⭐ ÂNCORAS: <b id="anchorCount" class="text-white">0</b>/4</div>
+            <div id="gameCount" class="text-[9px] text-gray-600 font-bold">---</div>
         </div>
 
-        <div id="loading" class="flex flex-col items-center justify-center py-10">
-            <div class="loader mb-3"></div>
-        </div>
+        <div id="loading" class="flex justify-center py-10"><div class="loader"></div></div>
 
-        <!-- LISTA -->
         <div id="gameList" class="bg-[#0d1518] rounded-2xl border border-[#1a2e38] shadow-2xl overflow-hidden mb-6"></div>
 
-        <!-- GERAÇÃO -->
-        <div class="flex flex-col gap-1 mb-8">
-            <button onclick="generateMatrix()" class="w-full bg-white text-[#050a0c] font-black py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] uppercase tracking-[0.2em] text-sm">
+        <div class="flex flex-col gap-2 mb-8">
+            <button onclick="validateBeforeGenerate()" class="w-full bg-white text-black font-black py-4 rounded-xl shadow-lg transition-all active:scale-95 uppercase text-sm tracking-widest">
                 Gerar Bilhetes Sniper
             </button>
-            <button id="shareAllBtn" onclick="shareAllTickets()" class="hidden w-full bg-transparent border border-[#1a2e38] text-gray-400 font-bold py-3 rounded-xl text-[10px] uppercase tracking-widest mt-3">
-                Enviar Matriz para WhatsApp
-            </button>
+            <div class="flex gap-2">
+                <button id="shareAllBtn" onclick="shareAllTickets()" class="hidden flex-1 bg-[#142127] border border-[#1a2e38] text-gray-400 font-bold py-3 rounded-xl text-[10px] uppercase tracking-widest">WhatsApp Matriz</button>
+                <button id="bet365Btn" onclick="openBet365()" class="hidden flex-1 bg-[#142127] border border-[#1a2e38] text-[#00e676] font-bold py-3 rounded-xl text-[10px] uppercase tracking-widest">Abrir Bet365</button>
+            </div>
         </div>
 
-        <!-- RESULTADOS -->
-        <div id="results" class="mt-6 space-y-4"></div>
+        <div id="excludedSection" class="hidden mb-10 bg-[#0d1518] p-4 rounded-xl border border-dashed border-[#1a2e38]">
+            <h3 class="text-[8px] text-gray-500 font-black uppercase mb-3 tracking-widest">🗑️ Jogos Removidos (Clique para restaurar)</h3>
+            <div id="excludedList" class="flex flex-wrap gap-2"></div>
+        </div>
 
-        <!-- HISTÓRICO -->
-        <div id="historySection" class="mt-14 pb-32">
-            <details class="group">
-                <summary class="flex items-center justify-center gap-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.2em] border-b border-[#1a2e38] pb-4 mb-6 hover:text-gray-400">
-                    📂 HISTÓRICO DE OPERAÇÕES
-                </summary>
-                <div id="historyList" class="space-y-4"></div>
-            </details>
+        <div id="results" class="mt-6"></div>
+
+        <div class="mt-14 pb-32 border-t border-[#1a2e38] pt-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">📂 Histórico Sniper</h3>
+                <div class="flex gap-2">
+                    <button onclick="clearFullHistory()" class="bg-red-900/30 text-red-500 text-[8px] font-black px-3 py-1.5 rounded-full uppercase border border-red-900/50">Limpar Histórico</button>
+                    <button id="shareSelectedBtn" onclick="shareSelectedHistory()" class="hidden bg-[#00e676] text-black text-[9px] font-black px-4 py-1.5 rounded-full uppercase transition-all shadow-lg active:scale-95">WhatsApp Seleção</button>
+                </div>
+            </div>
+            <div id="historyList" class="space-y-4"></div>
+            <div id="emptyHistory" class="text-center py-12 text-gray-700 italic text-[10px] uppercase tracking-widest">Histórico Vazio.</div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-3 rounded-full font-black text-[10px] uppercase shadow-2xl transition-all opacity-0 pointer-events-none z-50">SALVO!</div>
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-3 rounded-full font-black text-[10px] uppercase shadow-2xl opacity-0 transition-all z-50 pointer-events-none">OK!</div>
 
     <script>
         const API_KEY = "382e534fa4dfaa17600726e74b847a4e";
         const GITHUB_USER = "jvmascarello"; 
         const GITHUB_REPO = "magraobet"; 
         const GITHUB_BRANCH = "escudos"; 
+        const HISTORY_KEY = "m10bet_history_v4.8";
 
         let allGames = [];
         let selections = {}; 
@@ -231,31 +263,35 @@
             setPeriod(3);
         };
 
-        const slugify = (text) => text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-');
+        const slugify = (text) => text.toString().toLowerCase().trim()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '-');
 
         function getShieldUrl(name) {
             let slug = slugify(name);
             if (slug === "atletico-mineiro") slug = "ateltico-mineiro"; 
+            if (slug === "gremio") slug = "gremio"; 
             return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${slug}.png`;
         }
 
         async function fetchOdds() {
-            const loader = document.getElementById('loading');
             try {
                 const url = `https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
                 const response = await fetch(url);
                 allGames = await response.json();
                 allGames.forEach(g => selections[g.id] = ["1"]);
-                document.getElementById('modeLabel').innerText = "API CONECTADA";
+                document.getElementById('modeLabel').innerText = "CONECTADO";
                 renderGames();
             } catch (e) {
-                document.getElementById('modeLabel').innerText = "ERRO API - MODO TESTE";
+                document.getElementById('modeLabel').innerText = "MODO TESTE";
                 useMockData();
-            } finally { loader.classList.add('hidden'); }
+            } finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
         function useMockData() {
-            const times = ["Flamengo", "Palmeiras", "Botafogo", "Vasco", "Corinthians", "Sao Paulo", "Gremio", "Internacional", "Atletico Mineiro", "Cruzeiro", "Bahia", "Fluminense", "Santos", "Fortaleza", "Cuiaba", "Sport"];
+            const times = ["Flamengo", "Palmeiras", "Botafogo", "Vasco", "Corinthians", "São Paulo", "Grêmio", "Internacional", "Atlético Mineiro", "Cruzeiro", "Bahia", "Fluminense"];
             const mock = [];
             for (let i = 1; i <= 20; i++) {
                 let t1 = times[Math.floor(Math.random()*times.length)];
@@ -271,19 +307,49 @@
             renderGames();
         }
 
+        function getManipulatedCount() {
+            return Object.keys(selections).filter(id => {
+                const s = selections[id] || ["1"];
+                const isDefault = s.length === 1 && s[0] === "1";
+                // É manipulado se: É Âncora OU o palpite não é o padrão ["1"]
+                return anchors.has(id) || !isDefault;
+            }).length;
+        }
+
         function renderGames() {
             const list = document.getElementById('gameList');
-            list.innerHTML = '';
+            const exclSection = document.getElementById('excludedSection');
+            const exclList = document.getElementById('excludedList');
+            list.innerHTML = ''; exclList.innerHTML = '';
+            
             const now = new Date();
             const limit = new Date();
             limit.setDate(now.getDate() + currentPeriod);
+            
             const filtered = allGames.filter(g => {
                 const dt = new Date(g.commence_time);
-                return dt > now && dt <= limit && !excludedGames.has(g.id);
+                return dt > now && dt <= limit;
             });
+
+            const mCount = getManipulatedCount();
+
+            let visibleCount = 0;
             filtered.forEach(game => {
+                if (excludedGames.has(game.id)) {
+                    const item = document.createElement('div');
+                    item.className = 'excluded-item';
+                    item.innerText = `+ ${game.home_team} x ${game.away_team}`;
+                    item.onclick = () => { excludedGames.delete(game.id); renderGames(); };
+                    exclList.appendChild(item);
+                    return;
+                }
+                
+                visibleCount++;
                 const dt = new Date(game.commence_time);
                 const isAnchor = anchors.has(game.id);
+                // ALERTA LÓGICO: Só mostra o aviso visual se já houver mais de 4 manipulações humanas no total.
+                const isFakeAnchor = (mCount > 4) && !isAnchor && (selections[game.id]?.length === 1);
+
                 const row = document.createElement('div');
                 row.className = 'game-row';
                 row.innerHTML = `
@@ -292,31 +358,35 @@
                     </div>
                     <div class="game-time flex flex-col items-center">
                         <span class="text-[9px] text-gray-600 font-bold">${dt.getDate()}/${dt.getMonth()+1}</span>
-                        <span class="text-[8px] text-gray-500 font-medium">${dt.getHours()}:${dt.getMinutes().toString().padStart(2, '0')}</span>
+                        <span class="text-[8px] text-gray-500">${dt.getHours()}:${dt.getMinutes().toString().padStart(2, '0')}</span>
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col gap-1.5">
                         <div class="flex items-center gap-2">
-                            <img src="${getShieldUrl(game.home_team)}" class="team-shield-img" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${game.home_team}&backgroundColor=0d1518'">
-                            <span class="team-name truncate-name font-bold ${isAnchor ? 'text-white' : 'text-gray-300'} text-[12px] uppercase tracking-tight">${game.home_team}</span>
+                            <img src="${getShieldUrl(game.home_team)}" class="team-shield-img" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${game.home_team}'">
+                            <span class="team-name truncate-name font-bold ${isAnchor ? 'text-white' : 'text-gray-400'} text-[12px] uppercase tracking-tight">
+                                ${game.home_team} ${isFakeAnchor ? '<span class="text-warning ml-1">⚠️</span>' : ''}
+                            </span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <img src="${getShieldUrl(game.away_team)}" class="team-shield-img" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${game.away_team}&backgroundColor=0d1518'">
-                            <span class="team-name truncate-name font-bold ${isAnchor ? 'text-white' : 'text-gray-300'} text-[12px] uppercase tracking-tight">${game.away_team}</span>
+                            <img src="${getShieldUrl(game.away_team)}" class="team-shield-img" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=${game.away_team}'">
+                            <span class="team-name truncate-name font-bold ${isAnchor ? 'text-white' : 'text-gray-400'} text-[12px] uppercase tracking-tight">${game.away_team}</span>
                         </div>
                     </div>
-                    <div class="flex gap-1 w-[38%]">
+                    <div class="flex gap-1 w-[38%] sm:w-[32%]">
                         <button onclick="toggleBet('${game.id}', '1')" class="btn-bet ${selections[game.id].includes('1') ? 'active-win' : ''}">1</button>
                         <button onclick="toggleBet('${game.id}', 'X')" class="btn-bet ${selections[game.id].includes('X') ? 'active-draw' : ''}">X</button>
                         <button onclick="toggleBet('${game.id}', '2')" class="btn-bet ${selections[game.id].includes('2') ? 'active-win' : ''}">2</button>
                     </div>
                     <button onclick="removeGame('${game.id}')" class="btn-off">
-                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     </button>
                 `;
                 list.appendChild(row);
             });
-            document.getElementById('gameCount').innerText = `${filtered.length} JOGOS ATIVOS`;
+            
+            document.getElementById('gameCount').innerText = `${visibleCount} JOGOS ATIVOS`;
             document.getElementById('anchorCount').innerText = anchors.size;
+            if (excludedGames.size > 0) exclSection.classList.remove('hidden'); else exclSection.classList.add('hidden');
         }
 
         function toggleAnchor(id) { 
@@ -336,7 +406,20 @@
         }
 
         function removeGame(id) { excludedGames.add(id); anchors.delete(id); renderGames(); }
-        function resetAllSelections() { selections = {}; anchors.clear(); excludedGames.clear(); renderGames(); }
+
+        function resetAllSelections() { 
+            selections = {}; 
+            allGames.forEach(g => selections[g.id] = ["1"]);
+            anchors.clear(); 
+            excludedGames.clear(); 
+            generatedTickets = [];
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('shareAllBtn').classList.add('hidden');
+            document.getElementById('bet365Btn').classList.add('hidden');
+            renderGames(); 
+            showToast("RESET REALIZADO");
+        }
+        
         function setPeriod(d) {
             currentPeriod = d;
             document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('period-btn-active'));
@@ -344,8 +427,40 @@
             renderGames();
         }
 
+        function validateBeforeGenerate() {
+            if (anchors.size !== 4) { alert("Selecione exatamente 4 Âncoras (Estrelas)."); return; }
+            
+            const now = new Date();
+            const limit = new Date();
+            limit.setDate(now.getDate() + currentPeriod);
+            
+            const mCount = getManipulatedCount();
+            const activeGames = allGames.filter(g => {
+                const dt = new Date(g.commence_time);
+                return dt > now && dt <= limit && !excludedGames.has(g.id);
+            });
+
+            const fakes = [];
+            // O popup de alerta agora só é verificado se o usuário já manipulou MAIS de 4 jogos.
+            if (mCount > 4) {
+                activeGames.forEach(game => {
+                    if (!anchors.has(game.id) && selections[game.id]?.length === 1) {
+                        fakes.push(`${game.home_team} x ${game.away_team}`);
+                    }
+                });
+            }
+
+            if (fakes.length > 0) {
+                const list = document.getElementById('fakeAnchorList');
+                list.innerHTML = fakes.map(f => `<div class="bg-[#142127] border border-[#1a2e38] p-2 rounded text-[10px] text-warning font-bold uppercase">${f}</div>`).join('');
+                document.getElementById('warningModal').style.display = 'flex';
+            } else { generateMatrix(); }
+        }
+
+        function closeWarning() { document.getElementById('warningModal').style.display = 'none'; }
+        function forceGenerate() { closeWarning(); generateMatrix(); }
+
         function generateMatrix() {
-            if (anchors.size !== 4) { alert("Selecione EXATAMENTE 4 Âncoras."); return; }
             const invTotal = parseFloat(document.getElementById('investValue').value);
             const qtyReq = parseInt(document.getElementById('ticketQty').value);
             const resultsDiv = document.getElementById('results');
@@ -392,34 +507,35 @@
             }
             renderTickets(resultsDiv);
             document.getElementById('shareAllBtn').classList.remove('hidden');
+            document.getElementById('bet365Btn').classList.remove('hidden');
             window.scrollTo({ top: resultsDiv.offsetTop - 20, behavior: 'smooth' });
         }
 
         function renderTickets(container) {
-            container.innerHTML = `<h2 class="font-bold text-white mb-4 uppercase text-[10px] text-center tracking-widest">RESULTADO DA MATRIZ</h2>`;
+            container.innerHTML = `<h2 class="font-bold text-white mb-4 uppercase text-[10px] text-center tracking-widest">RESULTADO SNIPER</h2>`;
             generatedTickets.forEach((t, i) => {
                 const card = document.createElement('details'); 
-                card.className = "bg-[#0d1518] border border-[#1a2e38] rounded-xl mb-4 overflow-hidden";
+                card.className = "ticket-card";
                 let rows = t.games.map(g => `
                     <tr class="ticket-row">
-                        <td class="${g.type === 'ANC' ? 'ticket-anchor-col' : 'ticket-name-col'}">${g.j}</td>
-                        <td class="text-right font-black text-white uppercase px-2">${g.r}</td>
+                        <td class="${g.type === 'ANC' ? 'text-anchor' : 'text-sniper'} uppercase">${g.j}</td>
+                        <td class="text-right font-black text-white px-2 uppercase">${g.r}</td>
                         <td class="text-right text-[9px] text-gray-600 font-bold">${g.o.toFixed(2)}</td>
                     </tr>
                 `).join('');
                 card.innerHTML = `
                     <summary class="p-4 flex justify-between items-center bg-[#142127]">
-                        <span class="text-[9px] font-black text-white">BILHETE #${i+1}</span>
+                        <span class="text-[9px] font-black text-white uppercase italic">BILHETE #${i+1}</span>
                         <div class="text-right">
-                             <span class="text-[9px] text-gray-500 mr-3">ODD: ${t.odd.toFixed(2)}</span>
-                             <span class="text-[10px] text-white font-black uppercase">GANHO: <b class="text-[#00e676]">R$ ${(t.stake*t.odd).toFixed(2)}</b></span>
+                             <span class="text-[9px] text-gray-500 mr-3 font-bold uppercase">Odd: ${t.odd.toFixed(2)}</span>
+                             <span class="text-[10px] text-white font-black">GANHO: <b class="text-[#00e676]">R$ ${(t.stake*t.odd).toFixed(2)}</b></span>
                         </div>
                     </summary>
                     <div class="px-4 pb-4">
                         <table class="w-full mb-4 border-collapse">${rows}</table>
-                        <div class="flex gap-2 border-t border-[#1a2e38] pt-4">
-                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-[#1a2e38] text-gray-400 py-2.5 rounded-lg text-[9px] font-bold uppercase transition-all">Salvar</button>
-                            <button onclick="shareOneTicket(${i})" class="flex-1 bg-[#00e676] text-black py-2.5 rounded-lg text-[9px] font-black uppercase transition-all">WhatsApp</button>
+                        <div class="flex gap-2">
+                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-[#1a2e38] text-gray-400 py-3 rounded-xl text-[9px] font-bold uppercase active:scale-95 transition-all">Salvar</button>
+                            <button onclick="shareOneTicket(${i})" class="flex-1 bg-[#00e676] text-black py-3 rounded-xl text-[9px] font-black uppercase active:scale-95 transition-all">WhatsApp</button>
                         </div>
                     </div>
                 `;
@@ -427,14 +543,17 @@
             });
         }
 
-        // WhatsApp com Negrito nos Âncoras
+        function openBet365() { 
+            window.open("https://www.bet365.bet.br/?_h=LYe92WD5Yw8_sSM9FtKavg%3D%3D&btsffd=1#/AS/B1/I%5E21/J%5E1/K%5E1/", "_blank"); 
+        }
+
         function formatTicketText(t, i) {
             let text = `🎯 *BILHETE #${i+1}*\n`;
             t.games.forEach(g => {
-                const gameLine = `${g.j}: ${g.r} (${g.o.toFixed(2)})`;
-                text += g.type === 'ANC' ? `*${gameLine}*\n` : `${gameLine}\n`;
+                const line = `${g.j}: ${g.r} (${g.o.toFixed(2)})`;
+                text += g.type === 'ANC' ? `*${line}*\n` : `${line}\n`;
             });
-            text += `\n📈 *Odd:* ${t.odd.toFixed(2)}\n💰 *Retorno:* R$ ${(t.stake*t.odd).toFixed(2)}\n\n`;
+            text += `\n📈 *Odd:* ${t.odd.toFixed(2)} | 💰 *R$ ${(t.stake*t.odd).toFixed(2)}*\n\n`;
             return text;
         }
 
@@ -445,40 +564,56 @@
         }
 
         function shareAllTickets() {
-            let msg = `🔥 *M10BET SNIPER - MATRIZ*\n━━━━━━━━━━━━━━━\n\n`;
+            let msg = `🔥 *M10BET SNIPER - MATRIZ COMPLETA*\n━━━━━━━━━━━━━━━\n\n`;
             generatedTickets.forEach((t, i) => msg += formatTicketText(t, i));
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
         }
 
         function saveTicketToHistory(idx) {
             const t = generatedTickets[idx];
-            const h = JSON.parse(localStorage.getItem('m10bet_history') || '[]');
-            h.unshift({...t, date: new Date().toISOString()});
-            localStorage.setItem('m10bet_history', JSON.stringify(h.slice(0,50)));
+            const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const uniqueId = Date.now() + Math.random();
+            h.unshift({...t, date: new Date().toISOString(), historyId: uniqueId});
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 50)));
             const btn = document.getElementById(`s-${idx}`);
-            btn.classList.add('btn-used'); btn.innerText = 'SALVO';
-            showToast("SALVO NO HISTÓRICO!");
+            btn.classList.add('opacity-40', 'pointer-events-none');
+            btn.innerText = 'SALVO';
+            showToast("BILHETE SALVO");
             renderHistory();
         }
 
         function renderHistory() {
             const list = document.getElementById('historyList');
-            const h = JSON.parse(localStorage.getItem('m10bet_history') || '[]');
-            if (h.length === 0) return;
-            document.getElementById('emptyHistory').classList.add('hidden');
+            const shareBtn = document.getElementById('shareSelectedBtn');
+            const empty = document.getElementById('emptyHistory');
+            const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            
+            if (h.length === 0) {
+                empty.classList.remove('hidden');
+                shareBtn.classList.add('hidden');
+                list.innerHTML = '';
+                return;
+            }
+
+            empty.classList.add('hidden');
+            shareBtn.classList.remove('hidden');
             list.innerHTML = '';
+            
             h.forEach((t, i) => {
                 const card = document.createElement('details');
-                card.className = "bg-[#0d1518] border border-[#1a2e38] rounded-xl overflow-hidden";
+                card.className = "bg-[#0d1518] border border-[#1a2e38] rounded-xl overflow-hidden mb-3";
                 card.innerHTML = `
-                    <summary class="p-4 flex justify-between items-center text-[9px] font-black bg-[#142127]/50">
-                        <span class="text-gray-500">${new Date(t.date).toLocaleString('pt-BR')}</span>
+                    <summary class="p-3 flex justify-between items-center bg-[#142127]/50">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="history-selector" data-id="${t.historyId}" onclick="event.stopPropagation()">
+                            <span class="text-[8px] text-gray-500 uppercase font-black">${new Date(t.date).toLocaleString('pt-BR')}</span>
+                        </div>
                         <div class="flex items-center gap-4">
-                            <span class="text-[#00e676]">R$ ${(t.stake*t.odd).toFixed(2)}</span>
-                            <button onclick="deleteHistoryItem(${i})" class="text-red-900 font-black px-2 hover:text-red-500 transition-all">✕</button>
+                            <span class="text-[#00e676] text-[10px] font-black">R$ ${(t.stake*t.odd).toFixed(2)}</span>
+                            <button onclick="deleteHistoryItem(${i}); event.stopPropagation();" class="text-red-900 font-black px-2 text-xs">✕</button>
                         </div>
                     </summary>
-                    <div class="px-4 pb-4 pt-2 text-[10px] text-gray-500 space-y-2">
+                    <div class="p-3 text-[10px] text-gray-500 space-y-1 uppercase font-medium">
                         ${t.games.map(g => `<div class="flex justify-between border-b border-white/5 py-1.5"><span>${g.j}</span><span class="font-bold text-white">${g.r}</span></div>`).join('')}
                     </div>
                 `;
@@ -486,17 +621,38 @@
             });
         }
 
+        function shareSelectedHistory() {
+            const checkboxes = document.querySelectorAll('.history-selector:checked');
+            if (checkboxes.length === 0) { alert("Selecione bilhetes no histórico primeiro."); return; }
+            const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            let msg = `🔥 *M10BET SNIPER - SELEÇÃO*\n━━━━━━━━━━━━━━━\n\n`;
+            checkboxes.forEach((cb, idx) => {
+                const id = parseFloat(cb.getAttribute('data-id'));
+                const ticket = h.find(item => item.historyId === id);
+                if (ticket) msg += formatTicketText(ticket, idx);
+            });
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
         function deleteHistoryItem(index) {
-            const h = JSON.parse(localStorage.getItem('m10bet_history') || '[]');
+            const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
             h.splice(index, 1);
-            localStorage.setItem('m10bet_history', JSON.stringify(h));
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
             renderHistory();
+        }
+
+        function clearFullHistory() {
+            if (confirm("Deseja apagar TODO o histórico permanentemente?")) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+                showToast("HISTÓRICO LIMPO");
+            }
         }
 
         function showToast(msg) {
             const t = document.getElementById('toast');
-            t.innerText = msg; t.classList.remove('opacity-0');
-            setTimeout(() => t.classList.add('opacity-0'), 2000);
+            t.innerText = msg; t.classList.add('opacity-100');
+            setTimeout(() => t.classList.remove('opacity-100'), 2000);
         }
     </script>
 </body>
