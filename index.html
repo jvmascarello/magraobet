@@ -100,10 +100,11 @@
 
         .logo-header { width: 100%; max-width: 240px; margin: 0 auto; display: block; }
 
-        .period-btn-active {
+        .period-btn-active, .league-btn-active {
             background-color: var(--brand-green) !important;
             color: var(--dark-bg) !important;
             font-weight: 800 !important;
+            border-color: var(--brand-green) !important;
         }
 
         .ticket-card {
@@ -121,7 +122,6 @@
         .text-anchor { font-weight: 800; color: var(--brand-green); }
         .text-sniper { color: #9ca3af; }
 
-        /* Modal Alerta */
         #warningModal {
             display: none;
             position: fixed;
@@ -175,11 +175,23 @@
         <header class="text-center mb-6 pt-2">
             <img id="mainLogo" src="" alt="M10BET SNIPER PRO" class="logo-header">
             <div id="statusBadge" class="mt-4">
-                <span id="modeLabel" class="text-[9px] bg-[#0d1518] text-gray-500 border border-[#1a2e38] px-4 py-1 rounded-full font-bold uppercase tracking-widest italic">Aguarde...</span>
+                <span id="modeLabel" class="text-[9px] bg-[#0d1518] text-gray-500 border border-[#1a2e38] px-4 py-1 rounded-full font-bold uppercase tracking-widest italic">Aguardando Seleção...</span>
             </div>
         </header>
 
+        <!-- Configuração -->
         <div class="bg-[#0d1518] p-5 rounded-2xl border border-[#1a2e38] mb-4 shadow-2xl relative">
+            
+            <!-- Seletor de Liga -->
+            <div class="mb-4">
+                <label class="text-[8px] uppercase text-gray-500 font-black tracking-widest mb-2 block">Escolher Categoria</label>
+                <div class="flex gap-1">
+                    <button onclick="setLeague('A')" id="leagueA" class="league-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase">Série A</button>
+                    <button onclick="setLeague('B')" id="leagueB" class="league-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase">Série B</button>
+                    <button onclick="setLeague('TEST')" id="leagueTest" class="league-btn flex-1 bg-[#142127] text-gray-500 font-bold py-2.5 rounded-lg text-xs transition-all uppercase italic">Modo Teste</button>
+                </div>
+            </div>
+
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div class="flex flex-col gap-1 bg-[#142127] rounded-lg border border-[#1a2e38] p-3">
                     <label class="text-[8px] uppercase text-gray-500 font-black tracking-widest">Investimento</label>
@@ -199,14 +211,19 @@
                 </div>
                 <button onclick="resetAllSelections()" class="btn-reset-ui">Reset</button>
             </div>
+
+            <!-- Botão de Consulta Principal -->
+            <button onclick="initFetch()" id="btnFetch" class="w-full mt-4 bg-[#1e2d35] text-white border border-[#2d3d46] font-black py-3 rounded-xl shadow-lg transition-all active:scale-95 uppercase text-[10px] tracking-widest">
+                Consultar Jogos
+            </button>
         </div>
 
         <div class="flex items-center justify-between px-3 mb-3 py-1">
-            <div class="text-[9px] uppercase font-bold text-gray-600">⭐ ÂNCORAS: <b id="anchorCount" class="text-white">0</b>/4</div>
+            <div class="text-[9px] uppercase font-bold text-gray-600">⭐ ÂNCORAS: <b id="anchorCount" class="text-white">0</b>/2-4</div>
             <div id="gameCount" class="text-[9px] text-gray-600 font-bold">---</div>
         </div>
 
-        <div id="loading" class="flex justify-center py-10"><div class="loader"></div></div>
+        <div id="loading" class="hidden flex justify-center py-10"><div class="loader"></div></div>
 
         <div id="gameList" class="bg-[#0d1518] rounded-2xl border border-[#1a2e38] shadow-2xl overflow-hidden mb-6"></div>
 
@@ -247,20 +264,21 @@
         const GITHUB_USER = "jvmascarello"; 
         const GITHUB_REPO = "magraobet"; 
         const GITHUB_BRANCH = "escudos"; 
-        const HISTORY_KEY = "m10bet_history_v4.8";
+        const HISTORY_KEY = "m10bet_history_v5.0";
 
         let allGames = [];
         let selections = {}; 
         let anchors = new Set();
         let excludedGames = new Set();
         let currentPeriod = 3;
+        let currentLeague = 'A'; // 'A', 'B' ou 'TEST'
         let generatedTickets = []; 
 
         window.onload = () => { 
             document.getElementById('mainLogo').src = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/m10bet-logo.png`;
-            fetchOdds();
             renderHistory();
             setPeriod(3);
+            setLeague('A');
         };
 
         const slugify = (text) => text.toString().toLowerCase().trim()
@@ -276,24 +294,50 @@
             return `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${slug}.png`;
         }
 
+        function setLeague(l) {
+            currentLeague = l;
+            document.querySelectorAll('.league-btn').forEach(b => b.classList.remove('league-btn-active'));
+            if (l === 'A') document.getElementById('leagueA').classList.add('league-btn-active');
+            if (l === 'B') document.getElementById('leagueB').classList.add('league-btn-active');
+            if (l === 'TEST') document.getElementById('leagueTest').classList.add('league-btn-active');
+        }
+
+        function initFetch() {
+            allGames = [];
+            selections = {};
+            anchors.clear();
+            excludedGames.clear();
+            document.getElementById('gameList').innerHTML = '';
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('loading').classList.remove('hidden');
+            
+            if (currentLeague === 'TEST') {
+                setTimeout(useMockData, 800);
+            } else {
+                fetchOdds();
+            }
+        }
+
         async function fetchOdds() {
+            const sportKey = currentLeague === 'A' ? 'soccer_brazil_campeonato' : 'soccer_brazil_campeonato_serie_b';
             try {
-                const url = `https://api.the-odds-api.com/v4/sports/soccer_brazil_campeonato/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
+                const url = `https://api.the-odds-api.com/v4/sports/${sportKey}/odds/?apiKey=${API_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`;
                 const response = await fetch(url);
+                if (!response.ok) throw new Error();
                 allGames = await response.json();
                 allGames.forEach(g => selections[g.id] = ["1"]);
-                document.getElementById('modeLabel').innerText = "CONECTADO";
+                document.getElementById('modeLabel').innerText = `API: SÉRIE ${currentLeague}`;
                 renderGames();
             } catch (e) {
-                document.getElementById('modeLabel').innerText = "MODO TESTE";
-                useMockData();
+                document.getElementById('modeLabel').innerText = "ERRO NA CONSULTA";
+                showToast("ERRO AO BUSCAR JOGOS");
             } finally { document.getElementById('loading').classList.add('hidden'); }
         }
 
         function useMockData() {
-            const times = ["Flamengo", "Palmeiras", "Botafogo", "Vasco", "Corinthians", "São Paulo", "Grêmio", "Internacional", "Atlético Mineiro", "Cruzeiro", "Bahia", "Fluminense"];
+            const times = ["Flamengo", "Palmeiras", "Grêmio", "Vasco", "Corinthians", "Internacional", "Sport", "Bahia", "Cruzeiro", "Ceará", "Goiás", "Avaí"];
             const mock = [];
-            for (let i = 1; i <= 20; i++) {
+            for (let i = 1; i <= 15; i++) {
                 let t1 = times[Math.floor(Math.random()*times.length)];
                 let t2 = times.filter(t => t !== t1)[Math.floor(Math.random()*(times.length-1))];
                 mock.push({
@@ -304,16 +348,9 @@
             }
             allGames = mock.sort((a,b) => new Date(a.commence_time) - new Date(b.commence_time));
             allGames.forEach(g => selections[g.id] = ["1"]);
+            document.getElementById('modeLabel').innerText = "MODO TESTE ATIVO";
             renderGames();
-        }
-
-        function getManipulatedCount() {
-            return Object.keys(selections).filter(id => {
-                const s = selections[id] || ["1"];
-                const isDefault = s.length === 1 && s[0] === "1";
-                // É manipulado se: É Âncora OU o palpite não é o padrão ["1"]
-                return anchors.has(id) || !isDefault;
-            }).length;
+            document.getElementById('loading').classList.add('hidden');
         }
 
         function renderGames() {
@@ -331,7 +368,11 @@
                 return dt > now && dt <= limit;
             });
 
-            const mCount = getManipulatedCount();
+            // Lógica de Manipulação para Alerta
+            const mCount = Object.keys(selections).filter(id => {
+                const s = selections[id] || ["1"];
+                return anchors.has(id) || (s.length !== 1 || s[0] !== "1");
+            }).length;
 
             let visibleCount = 0;
             filtered.forEach(game => {
@@ -347,7 +388,6 @@
                 visibleCount++;
                 const dt = new Date(game.commence_time);
                 const isAnchor = anchors.has(game.id);
-                // ALERTA LÓGICO: Só mostra o aviso visual se já houver mais de 4 manipulações humanas no total.
                 const isFakeAnchor = (mCount > 4) && !isAnchor && (selections[game.id]?.length === 1);
 
                 const row = document.createElement('div');
@@ -396,7 +436,7 @@
         }
 
         function toggleBet(id, v) { 
-            if (anchors.has(id)) selections[id] = [v]; 
+            if (anchors.has(id)) { selections[id] = [v]; } 
             else { 
                 let c = selections[id]; 
                 if (c.includes(v)) { if (c.length > 1) selections[id] = c.filter(x => x !== v); } 
@@ -408,15 +448,16 @@
         function removeGame(id) { excludedGames.add(id); anchors.delete(id); renderGames(); }
 
         function resetAllSelections() { 
-            selections = {}; 
-            allGames.forEach(g => selections[g.id] = ["1"]);
+            allGames = [];
+            selections = {};
             anchors.clear(); 
             excludedGames.clear(); 
             generatedTickets = [];
+            document.getElementById('gameList').innerHTML = '';
             document.getElementById('results').innerHTML = '';
             document.getElementById('shareAllBtn').classList.add('hidden');
             document.getElementById('bet365Btn').classList.add('hidden');
-            renderGames(); 
+            document.getElementById('modeLabel').innerText = "Aguardando Seleção...";
             showToast("RESET REALIZADO");
         }
         
@@ -424,32 +465,18 @@
             currentPeriod = d;
             document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('period-btn-active'));
             document.getElementById('p' + d).classList.add('period-btn-active');
-            renderGames();
+            if (allGames.length > 0) renderGames();
         }
 
         function validateBeforeGenerate() {
-            if (anchors.size !== 4) { alert("Selecione exatamente 4 Âncoras (Estrelas)."); return; }
-            
-            const now = new Date();
-            const limit = new Date();
-            limit.setDate(now.getDate() + currentPeriod);
-            
-            const mCount = getManipulatedCount();
-            const activeGames = allGames.filter(g => {
-                const dt = new Date(g.commence_time);
-                return dt > now && dt <= limit && !excludedGames.has(g.id);
-            });
-
+            if (anchors.size < 2 || anchors.size > 4) { alert("Selecione de 2 a 4 Âncoras."); return; }
+            const activeGames = allGames.filter(g => !excludedGames.has(g.id));
             const fakes = [];
-            // O popup de alerta agora só é verificado se o usuário já manipulou MAIS de 4 jogos.
-            if (mCount > 4) {
+            if (activeGames.length > anchors.size) {
                 activeGames.forEach(game => {
-                    if (!anchors.has(game.id) && selections[game.id]?.length === 1) {
-                        fakes.push(`${game.home_team} x ${game.away_team}`);
-                    }
+                    if (!anchors.has(game.id) && selections[game.id]?.length === 1) fakes.push(`${game.home_team} x ${game.away_team}`);
                 });
             }
-
             if (fakes.length > 0) {
                 const list = document.getElementById('fakeAnchorList');
                 list.innerHTML = fakes.map(f => `<div class="bg-[#142127] border border-[#1a2e38] p-2 rounded text-[10px] text-warning font-bold uppercase">${f}</div>`).join('');
@@ -486,9 +513,14 @@
                 else sniperData.push(item);
             });
 
+            const numAnchors = anchorData.length;
+            const cycleLen = numAnchors + 1;
+
             generatedTickets = [];
             for (let i = 0; i < qtyReq; i++) {
-                const cyclePos = i % 5; let ticketGames = []; let ticketOdd = 1;
+                const cyclePos = i % cycleLen; 
+                let ticketGames = []; let ticketOdd = 1;
+
                 anchorData.forEach((anc, idx) => {
                     let res, odd;
                     if (cyclePos > 0 && (cyclePos - 1) === idx) { res = "X"; odd = anc.odds["X"]; }
@@ -496,12 +528,14 @@
                     ticketGames.push({ j: anc.j, r: res, o: odd, type: 'ANC', time: anc.time });
                     ticketOdd *= odd;
                 });
+
                 sniperData.forEach(snip => {
                     const res = snip.sels[Math.floor(Math.random() * snip.sels.length)];
                     const odd = snip.odds[res];
                     ticketGames.push({ j: snip.j, r: res, o: odd, type: 'SNIP', time: snip.time });
                     ticketOdd *= odd;
                 });
+
                 ticketGames.sort((a, b) => a.time - b.time);
                 generatedTickets.push({ id: i, odd: ticketOdd, stake: invTotal / qtyReq, games: ticketGames });
             }
@@ -534,8 +568,8 @@
                     <div class="px-4 pb-4">
                         <table class="w-full mb-4 border-collapse">${rows}</table>
                         <div class="flex gap-2">
-                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-[#1a2e38] text-gray-400 py-3 rounded-xl text-[9px] font-bold uppercase active:scale-95 transition-all">Salvar</button>
-                            <button onclick="shareOneTicket(${i})" class="flex-1 bg-[#00e676] text-black py-3 rounded-xl text-[9px] font-black uppercase active:scale-95 transition-all">WhatsApp</button>
+                            <button onclick="saveTicketToHistory(${i})" id="s-${i}" class="flex-1 bg-[#1a2e38] text-gray-400 py-3 rounded-xl text-[9px] font-bold uppercase">Salvar</button>
+                            <button onclick="shareOneTicket(${i})" class="flex-1 bg-[#00e676] text-black py-3 rounded-xl text-[9px] font-black uppercase">WhatsApp</button>
                         </div>
                     </div>
                 `;
@@ -623,7 +657,7 @@
 
         function shareSelectedHistory() {
             const checkboxes = document.querySelectorAll('.history-selector:checked');
-            if (checkboxes.length === 0) { alert("Selecione bilhetes no histórico primeiro."); return; }
+            if (checkboxes.length === 0) { alert("Selecione bilhetes."); return; }
             const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
             let msg = `🔥 *M10BET SNIPER - SELEÇÃO*\n━━━━━━━━━━━━━━━\n\n`;
             checkboxes.forEach((cb, idx) => {
@@ -642,7 +676,7 @@
         }
 
         function clearFullHistory() {
-            if (confirm("Deseja apagar TODO o histórico permanentemente?")) {
+            if (confirm("Apagar todo o histórico?")) {
                 localStorage.removeItem(HISTORY_KEY);
                 renderHistory();
                 showToast("HISTÓRICO LIMPO");
